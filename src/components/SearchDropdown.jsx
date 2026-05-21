@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Film, User, Clapperboard, Star, Calendar, Clock } from 'lucide-react'
 
-function SearchDropdown({ allMovies, onMovieClick, actors, directors }) {
+function SearchDropdown({ allMovies, onMovieClick, onActorClick, onDirectorClick, actors, directors }) {
     const [query, setQuery] = useState('')
     const [isOpen, setIsOpen] = useState(false)
     const [results, setResults] = useState({ movies: [], actors: [], directors: [] })
@@ -53,10 +53,15 @@ function SearchDropdown({ allMovies, onMovieClick, actors, directors }) {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
+    // 🔥 ЕДИНАЯ ФУНКЦИЯ ОБРАБОТКИ КЛИКА (только одна!)
     const handleSelect = (type, item) => {
         if (type === 'movie') {
             onMovieClick(item)
-        }
+        } else if (type === 'actor') {
+            if (onActorClick) onActorClick(item.id)
+        }  else if (type === 'director') {
+        onDirectorClick?.(item.id) // ← ДОБАВЬ
+    }
         setQuery('')
         setIsOpen(false)
     }
@@ -132,7 +137,11 @@ function SearchDropdown({ allMovies, onMovieClick, actors, directors }) {
                                 </div>
                                 <div className="people-grid">
                                     {results.actors.map(actor => (
-                                        <div key={actor.id} className="person-item">
+                                        <div
+                                            key={actor.id}
+                                            className="person-item"
+                                            onClick={() => handleSelect('actor', actor)}
+                                        >
                                             <div className="person-avatar actor">
                                                 {actor.name.charAt(0)}
                                             </div>
@@ -153,7 +162,11 @@ function SearchDropdown({ allMovies, onMovieClick, actors, directors }) {
                                 </div>
                                 <div className="people-grid">
                                     {results.directors.map(director => (
-                                        <div key={director.id} className="person-item">
+                                        <div
+                                            key={director.id}
+                                            className="person-item"
+                                            onClick={() => handleSelect('director', director)}
+                                            >
                                             <div className="person-avatar director">
                                                 <Clapperboard size={18} />
                                             </div>

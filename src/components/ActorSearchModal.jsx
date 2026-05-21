@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, User, Film, Star, ChevronRight } from 'lucide-react'
 
-// 🎬 База актёров (можно заменить на реальный API позже)
+// 🎬 База актёров
 const actorsDB = [
     { id: 1, name: 'Леонардо ДиКаприо', movies: [1, 2, 7] },
     { id: 2, name: 'Кристиан Бэйл', movies: [3] },
@@ -16,9 +16,8 @@ const actorsDB = [
     { id: 10, name: 'Фрэнсис МакДорманд', movies: [5, 7] }
 ]
 
-function ActorSearchModal({ isOpen, onClose, allMovies, onMovieClick }) {
+function ActorSearchModal({ isOpen, onClose, allMovies, onMovieClick, onActorClick }) {
     const [searchQuery, setSearchQuery] = useState('')
-    const [selectedActor, setSelectedActor] = useState(null)
 
     // Фильтрация актёров по поиску
     const filteredActors = useMemo(() => {
@@ -28,18 +27,14 @@ function ActorSearchModal({ isOpen, onClose, allMovies, onMovieClick }) {
         )
     }, [searchQuery])
 
-    // Фильмы выбранного актёра
-    const actorMovies = useMemo(() => {
-        if (!selectedActor) return []
-        return allMovies.filter(movie => selectedActor.movies.includes(movie.id))
-    }, [selectedActor, allMovies])
-
     const handleActorSelect = (actor) => {
-        setSelectedActor(actor)
-        setSearchQuery('')
+        // 🔥 Открываем карточку актёра
+        if (onActorClick) {
+            onActorClick(actor.id)
+        }
+        // Закрываем текущую модалку поиска
+        onClose()
     }
-
-    const handleBack = () => setSelectedActor(null)
 
     return (
         <AnimatePresence>
@@ -63,80 +58,49 @@ function ActorSearchModal({ isOpen, onClose, allMovies, onMovieClick }) {
                         >
                             {/* Шапка */}
                             <div className="actor-header">
-                                <button className="modal-close" onClick={onClose}><X size={20} /></button>
-                                {selectedActor ? (
-                                    <button className="back-btn" onClick={handleBack}>
-                                        <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
-                                        Назад к поиску
-                                    </button>
-                                ) : (
-                                    <h2 className="actor-title">Поиск по актёру</h2>
-                                )}
+                                <button className="modal-close" onClick={onClose}>
+                                    <X size={20} />
+                                </button>
+                                <h2 className="actor-title">Поиск по актёру</h2>
                             </div>
 
-                            {!selectedActor ? (
-                                // 🔍 Экран поиска
-                                <div className="actor-search-view">
-                                    <div className="search-wrapper">
-                                        <Search size={20} className="search-icon" />
-                                        <input
-                                            type="text"
-                                            placeholder="Введите имя актёра..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="actor-search-input"
-                                        />
-                                    </div>
-
-                                    <div className="actors-list">
-                                        {filteredActors.length > 0 ? filteredActors.map(actor => (
-                                            <button key={actor.id} className="actor-card" onClick={() => handleActorSelect(actor)}>
-                                                <div className="actor-avatar">{actor.name.charAt(0)}</div>
-                                                <div className="actor-info">
-                                                    <span className="actor-name">{actor.name}</span>
-
-                                                </div>
-                                                <ChevronRight size={18} className="actor-arrow" />
-                                            </button>
-                                        )) : (
-                                            <div className="empty-state">
-                                                <User size={48} opacity={0.3} />
-                                                <p>Актёр не найден</p>
-                                            </div>
-                                        )}
-                                    </div>
+                            {/* Поиск */}
+                            <div className="actor-search-view">
+                                <div className="search-wrapper">
+                                    <Search size={20} className="search-icon" />
+                                    <input
+                                        type="text"
+                                        placeholder="Введите имя актёра..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="actor-search-input"
+                                    />
                                 </div>
-                            ) : (
-                                // 🎬 Экран фильмографии
-                                <div className="actor-filmography">
-                                    <div className="actor-profile">
-                                        <div className="actor-avatar large">{selectedActor.name.charAt(0)}</div>
-                                        <div>
-                                            <h3 className="actor-profile-name">{selectedActor.name}</h3>
+
+                                {/* Список актёров */}
+                                <div className="actors-list">
+                                    {filteredActors.length > 0 ? filteredActors.map(actor => (
+                                        <button
+                                            key={actor.id}
+                                            className="actor-card"
+                                            onClick={() => handleActorSelect(actor)}
+                                        >
+                                            <div className="actor-avatar">
+                                                {actor.name.charAt(0)}
+                                            </div>
+                                            <div className="actor-info">
+                                                <span className="actor-name">{actor.name}</span>
+                                            </div>
+                                            <ChevronRight size={18} className="actor-arrow" />
+                                        </button>
+                                    )) : (
+                                        <div className="empty-state">
+                                            <User size={48} opacity={0.3} />
+                                            <p>Актёр не найден</p>
                                         </div>
-                                    </div>
-
-                                    <div className="filmography-list">
-                                        {actorMovies.length > 0 ? actorMovies.map(movie => (
-                                            <div key={movie.id} className="filmography-item" onClick={() => { onMovieClick(movie); onClose(); }}>
-                                                <div className="film-poster-mini" style={{ background: movie.gradient }} />
-                                                <div className="film-info">
-                                                    <h4>{movie.title}</h4>
-                                                    <div className="film-meta">
-                                                        <span>{movie.year}</span>
-                                                        <span className="rating">
-                              <Star size={12} fill="#ffd700" color="#ffd700" /> {movie.rating}
-                            </span>
-                                                    </div>
-                                                </div>
-                                                <ChevronRight size={16} className="film-arrow" />
-                                            </div>
-                                        )) : (
-                                            <p className="empty-films">Нет фильмов этого актёра в базе</p>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </motion.div>
                     </div>
                 </>

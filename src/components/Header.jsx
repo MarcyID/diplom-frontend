@@ -1,9 +1,8 @@
-import { useState } from 'react'
-import { Film, Search, User } from 'lucide-react'
+import { Film, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import SearchDropdown from './SearchDropdown'
 
-// Временные данные (потом можно вынести в отдельный файл)
+// Временные данные
 const actorsDB = [
     { id: 1, name: 'Леонардо ДиКаприо', movies: [1, 2, 7] },
     { id: 2, name: 'Кристиан Бэйл', movies: [3] },
@@ -26,29 +25,28 @@ const directorsDB = [
     { id: 6, name: 'Квентин Тарантино', movies: [8] }
 ]
 
-function Header({ allMovies, onMovieClick }) {
+function Header({ allMovies, onMovieClick, onActorClick, onDirectorClick }) {
     return (
         <header className="header">
             <div className="header-container">
-                {/* Логотип */}
                 <Link to="/" className="logo">
                     <Film className="logo-icon" />
                     <span>CineMatch</span>
                 </Link>
 
-                {/* Поиск */}
                 <SearchDropdown
                     allMovies={allMovies}
                     onMovieClick={onMovieClick}
+                    onActorClick={onActorClick}
+                    onDirectorClick={onDirectorClick}
                     actors={actorsDB}
                     directors={directorsDB}
                 />
 
-                {/* Кнопка входа */}
                 <div className="header-actions">
-                    <button className="icon-btn">
+                    <Link to="/profile" className="icon-btn">
                         <User size={20} />
-                    </button>
+                    </Link>
                 </div>
             </div>
         </header>

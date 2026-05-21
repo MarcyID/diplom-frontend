@@ -12,7 +12,7 @@ const directorsDB = [
     { id: 6, name: 'Квентин Тарантино', movies: [8] }
 ]
 
-function DirectorSearchModal({ isOpen, onClose, allMovies, onMovieClick }) {
+function DirectorSearchModal({ isOpen, onClose, allMovies, onMovieClick, onDirectorClick }) {
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedDirector, setSelectedDirector] = useState(null)
 
@@ -31,8 +31,12 @@ function DirectorSearchModal({ isOpen, onClose, allMovies, onMovieClick }) {
     }, [selectedDirector, allMovies])
 
     const handleSelect = (director) => {
-        setSelectedDirector(director)
-        setSearchQuery('')
+        // 🔥 Открываем карточку режиссёра
+        if (onDirectorClick) {
+            onDirectorClick(director.id)
+        }
+        // Закрываем текущую модалку поиска
+        onClose()
     }
 
     const handleBack = () => setSelectedDirector(null)

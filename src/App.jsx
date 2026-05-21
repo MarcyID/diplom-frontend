@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import MovieCarousel from './components/MovieCarousel'
@@ -11,6 +11,10 @@ import RandomMovieModal from './components/RandomMovieModal'
 import ActorSearchModal from './components/ActorSearchModal'
 import DirectorSearchModal from './components/DirectorSearchModal'
 import UpcomingModal from './components/UpcomingModal'
+import ActorCardModal from './components/ActorCardModal'
+import DirectorCardModal from './components/DirectorCardModal'
+import AuthModal from './components/AuthModal'
+import ProfilePage from './components/ProfilePage'
 
 // === ДАННЫЕ ===
 const moviesData = [
@@ -43,18 +47,34 @@ function App() {
     const [selectedMovie, setSelectedMovie] = useState(null)
     const [isMovieModalOpen, setIsMovieModalOpen] = useState(false)
 
-    // 🎯 Состояние фич-модалок (жанр, подбор, случайный и т.д.)
+    // 🎯 Состояние фич-модалок
     const [featureModalType, setFeatureModalType] = useState(null)
     const [isSelectionOpen, setIsSelectionOpen] = useState(false)
     const [isRandomOpen, setIsRandomOpen] = useState(false)
     const [isActorOpen, setIsActorOpen] = useState(false)
     const [isDirectorOpen, setIsDirectorOpen] = useState(false)
     const [isUpcomingOpen, setIsUpcomingOpen] = useState(false)
+    const [selectedDirectorId, setSelectedDirectorId] = useState(null)
+    const [isDirectorCardOpen, setIsDirectorCardOpen] = useState(false)
+
+    // 🎭 Состояние карточки актёра
+    const [selectedActorId, setSelectedActorId] = useState(null)
+    const [isActorCardOpen, setIsActorCardOpen] = useState(false)
 
     // 🔓 Открыть модалку фильма
     const handleOpenMovieModal = (movie) => {
         setSelectedMovie(movie)
         setIsMovieModalOpen(true)
+    }
+    const handleOpenDirectorCard = (directorId) => {
+        setSelectedDirectorId(directorId)
+        setIsDirectorCardOpen(true)
+    }
+
+    // 🎭 Открыть карточку актёра ← ЭТОЙ ФУНКЦИИ НЕ ХВАТАЛО!
+    const handleOpenActorCard = (actorId) => {
+        setSelectedActorId(actorId)
+        setIsActorCardOpen(true)
     }
 
     // 🎪 Открыть фич-модалку по типу
@@ -66,6 +86,32 @@ function App() {
         else if (type === 'upcoming') setIsUpcomingOpen(true)
         else setFeatureModalType(type)
     }
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [user, setUser] = useState({
+        name: 'Гость',
+        avatar: null,
+        banner: null,
+        genres: ['Драма', 'Фантастика'],
+        favorites: [1, 3, 6],
+        collections: [
+            {
+                id: 1,
+                title: 'Вечерний релакс',
+                description: 'Фильмы для спокойного вечера с чашкой чая и пледом',
+                films: 2,
+                movieIds: [1, 4], // Начало, 1+1
+                gradient: 'linear-gradient(135deg, #667eea, #764ba2)'
+            },
+            {
+                id: 2,
+                title: 'Нолан-марафон',
+                description: 'Все фильмы Кристофера Нолана в хронологическом порядке',
+                films: 3,
+                movieIds: [1, 2, 3], // Начало, Интерстеллар, Тёмный рыцарь
+                gradient: 'linear-gradient(135deg, #f093fb, #f5576c)'
+            }
+        ]
+    })
 
     return (
         <Router>
@@ -76,10 +122,12 @@ function App() {
                     <div className="glow-right"></div>
                 </div>
 
-                {/* Шапка с поиском — получает функцию из App */}
+                {/* Шапка с поиском */}
                 <Header
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
+                    onActorClick={handleOpenActorCard} // ← Теперь функция существует!
+                    onDirectorClick={handleOpenDirectorCard} // ← ДОБАВЬ
                 />
 
                 <Routes>
@@ -91,11 +139,33 @@ function App() {
                     } />
                     <Route path="/catalog" element={<Catalog />} />
                     <Route path="/selection" element={<SelectionPage />} />
+                    <Route path="/auth" element={
+                        <AuthModal
+                            setIsLoggedIn={setIsLoggedIn}
+                            setUser={setUser}  // ← Передаем функцию обновления пользователя
+                        />
+                    } />
+                    <Route path="/" element={
+                        isLoggedIn ? (
+                            <Home onMovieClick={handleOpenMovieModal} onOpenFeatureModal={handleOpenFeatureModal} />
+                        ) : (
+                            <Navigate to="/auth" replace />
+                        )
+                    } />
+                    <Route path="/auth" element={<AuthModal setIsLoggedIn={setIsLoggedIn} />} />
+                    <Route path="/profile" element={
+                        <ProfilePage
+                            user={user}
+                            setUser={setUser}
+                            allMovies={moviesData}
+                            onMovieClick={handleOpenMovieModal}
+                        />
+                    } />
+                    <Route path="/catalog" element={<Catalog />} />
+                    <Route path="/selection" element={<SelectionPage />} />
                 </Routes>
 
-                {/* === ВСЕ МОДАЛКИ (рендерятся глобально, имеют доступ к состоянию) === */}
-
-                {/* Основная карточка фильма */}
+                {/* === МОДАЛКИ === */}
                 <MovieModal
                     movie={selectedMovie}
                     isOpen={isMovieModalOpen}
@@ -104,28 +174,15 @@ function App() {
                     onMovieClick={handleOpenMovieModal}
                 />
 
-                {/* Модалки фич */}
                 <FeatureModal type={featureModalType} isOpen={!!featureModalType} onClose={() => setFeatureModalType(null)} />
-
-                <SelectionModal
-                    isOpen={isSelectionOpen}
-                    onClose={() => setIsSelectionOpen(false)}
-                    allMovies={moviesData}
-                    onMovieClick={handleOpenMovieModal}
-                />
-
-                <RandomMovieModal
-                    isOpen={isRandomOpen}
-                    onClose={() => setIsRandomOpen(false)}
-                    allMovies={moviesData}
-                    onMovieClick={handleOpenMovieModal}
-                />
-
+                <SelectionModal isOpen={isSelectionOpen} onClose={() => setIsSelectionOpen(false)} allMovies={moviesData} onMovieClick={handleOpenMovieModal} />
+                <RandomMovieModal isOpen={isRandomOpen} onClose={() => setIsRandomOpen(false)} allMovies={moviesData} onMovieClick={handleOpenMovieModal} />
                 <ActorSearchModal
                     isOpen={isActorOpen}
                     onClose={() => setIsActorOpen(false)}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
+                    onActorClick={handleOpenActorCard} // ← ДОБАВЬ ЭТУ СТРОКУ
                 />
 
                 <DirectorSearchModal
@@ -133,16 +190,30 @@ function App() {
                     onClose={() => setIsDirectorOpen(false)}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
+                    onDirectorClick={handleOpenDirectorCard} // ← ДОБАВЬ
                 />
+                <UpcomingModal isOpen={isUpcomingOpen} onClose={() => setIsUpcomingOpen(false)} allMovies={moviesData} onMovieClick={handleOpenMovieModal} />
 
-                <UpcomingModal
-                    isOpen={isUpcomingOpen}
-                    onClose={() => setIsUpcomingOpen(false)}
+                {/* Карточка актёра */}
+                <ActorCardModal
+                    isOpen={isActorCardOpen}
+                    onClose={() => setIsActorCardOpen(false)}
+                    actorId={selectedActorId}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
                 />
+
+                <DirectorCardModal
+                    isOpen={isDirectorCardOpen}
+                    onClose={() => setIsDirectorCardOpen(false)}
+                    directorId={selectedDirectorId}
+                    allMovies={moviesData}
+                    onMovieClick={handleOpenMovieModal}
+                />
+
             </div>
         </Router>
+
     )
 }
 
