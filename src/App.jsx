@@ -13,10 +13,34 @@ import DirectorSearchModal from './components/DirectorSearchModal'
 import UpcomingModal from './components/UpcomingModal'
 import ActorCardModal from './components/ActorCardModal'
 import DirectorCardModal from './components/DirectorCardModal'
-import AuthModal from './components/AuthModal'
 import ProfilePage from './components/ProfilePage'
+import AuthModal from './components/AuthModal'
+import AddToCollectionModal from './components/AddToCollectionModal'
 
-// === ДАННЫЕ ===
+// === БАЗЫ ДАННЫХ (вынесены наверх, чтобы были доступны везде) ===
+const actorsDB = [
+    { id: 1, name: 'Леонардо ДиКаприо', avatar: '🎭', movies: [1, 2, 7] },
+    { id: 2, name: 'Кристиан Бэйл', avatar: '🦇', movies: [3] },
+    { id: 3, name: 'Джозеф Гордон-Левитт', avatar: '🎬', movies: [1, 3] },
+    { id: 4, name: 'Том Харди', avatar: '🐯', movies: [3, 5] },
+    { id: 5, name: 'Мэттью МакКонахи', avatar: '🤠', movies: [2, 5] },
+    { id: 6, name: 'Хоакин Феникс', avatar: '🃏', movies: [6] },
+    { id: 7, name: 'Тим Роббинс', avatar: '⚖️', movies: [7] },
+    { id: 8, name: 'Джон Траволта', avatar: '💃', movies: [8] },
+    { id: 9, name: 'Ума Турман', avatar: '⚔️', movies: [8] },
+    { id: 10, name: 'Фрэнсис МакДорманд', avatar: '🎭', movies: [5, 7] }
+]
+
+const directorsDB = [
+    { id: 1, name: 'Кристофер Нолан', avatar: '🎬', movies: [1, 2, 3] },
+    { id: 2, name: 'Оливье Накаш', avatar: '🎥', movies: [4] },
+    { id: 3, name: 'Питер Фаррелли', avatar: '🎞️', movies: [5] },
+    { id: 4, name: 'Тодд Филлипс', avatar: '🎭', movies: [6] },
+    { id: 5, name: 'Фрэнк Дарабонт', avatar: '🎬', movies: [7] },
+    { id: 6, name: 'Квентин Тарантино', avatar: '🎥', movies: [8] }
+]
+
+// === ДАННЫЕ ФИЛЬМОВ ===
 const moviesData = [
     { id: 1, title: 'Начало', year: 2010, rating: 8.8, duration: '2ч 28м', genre: 'Фантастика', country: 'США', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', description: 'Кобб — талантливый вор, лучший из лучших в опасном искусстве извлечения: он крадёт ценные секреты из глубин подсознания во время сна.' },
     { id: 2, title: 'Интерстеллар', year: 2014, rating: 8.6, duration: '2ч 49м', genre: 'Фантастика', country: 'США', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', description: 'Когда засуха и пыльные бури приводят человечество к продовольственному кризису, коллектив исследователей и учёных отправляется в путешествие.' },
@@ -28,12 +52,17 @@ const moviesData = [
     { id: 8, title: 'Криминальное чтиво', year: 1994, rating: 8.9, duration: '2ч 34м', genre: 'Криминал', country: 'США', gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', description: 'Два бандита Винсент Вега и Джулс Винфилд ведут философские беседы в перерывах между разборками и решением проблем с должниками.' }
 ]
 
-// === ПРОСТОЙ КОМПОНЕНТ ГЛАВНОЙ (только отображение) ===
+// === ПРОСТОЙ КОМПОНЕНТ ГЛАВНОЙ ===
 function Home({ onMovieClick, onOpenFeatureModal }) {
     return (
         <>
             <Hero onOpenModal={onOpenFeatureModal} />
-            <MovieCarousel movies={moviesData} onMovieClick={onMovieClick} />
+            <MovieCarousel
+                movies={moviesData}
+                onMovieClick={onMovieClick}
+                favoriteMovies={[]}
+                onToggleFavorite={() => {}}
+            />
         </>
     )
 }
@@ -41,7 +70,7 @@ function Home({ onMovieClick, onOpenFeatureModal }) {
 const Catalog = () => <h2>Страница Каталога (в разработке)</h2>
 const SelectionPage = () => <h2>Страница Подбора (в разработке)</h2>
 
-// === ГЛАВНОЕ ПРИЛОЖЕНИЕ (здесь живёт всё состояние) ===
+// === ГЛАВНОЕ ПРИЛОЖЕНИЕ ===
 function App() {
     // 🎬 Состояние модалки фильма
     const [selectedMovie, setSelectedMovie] = useState(null)
@@ -54,27 +83,46 @@ function App() {
     const [isActorOpen, setIsActorOpen] = useState(false)
     const [isDirectorOpen, setIsDirectorOpen] = useState(false)
     const [isUpcomingOpen, setIsUpcomingOpen] = useState(false)
+
+    // 🎭 Состояние карточек актёров/режиссёров
+    const [selectedActorId, setSelectedActorId] = useState(null)
+    const [isActorCardOpen, setIsActorCardOpen] = useState(false)
     const [selectedDirectorId, setSelectedDirectorId] = useState(null)
     const [isDirectorCardOpen, setIsDirectorCardOpen] = useState(false)
 
-    // 🎭 Состояние карточки актёра
-    const [selectedActorId, setSelectedActorId] = useState(null)
-    const [isActorCardOpen, setIsActorCardOpen] = useState(false)
+    // 👤 Авторизация и профиль
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [user, setUser] = useState({
+        name: 'Гость',
+        avatar: null,
+        banner: null,
+        genres: ['Драма', 'Фантастика'],
+        favoriteMovies: [],
+        favoriteActors: [],
+        favoriteDirectors: [],
+        favorites: [1, 3, 6],
+        collections: [
+            { id: 1, title: 'Вечерний релакс', description: 'Фильмы для спокойного вечера', films: 2, movieIds: [1, 4], gradient: 'linear-gradient(135deg, #667eea, #764ba2)' },
+            { id: 2, title: 'Нолан-марафон', description: 'Всё от Кристофера Нолана', films: 3, movieIds: [1, 2, 3], gradient: 'linear-gradient(135deg, #f093fb, #f5576c)' }
+        ]
+    })
 
     // 🔓 Открыть модалку фильма
     const handleOpenMovieModal = (movie) => {
         setSelectedMovie(movie)
         setIsMovieModalOpen(true)
     }
-    const handleOpenDirectorCard = (directorId) => {
-        setSelectedDirectorId(directorId)
-        setIsDirectorCardOpen(true)
-    }
 
-    // 🎭 Открыть карточку актёра ← ЭТОЙ ФУНКЦИИ НЕ ХВАТАЛО!
+    // 🎭 Открыть карточку актёра
     const handleOpenActorCard = (actorId) => {
         setSelectedActorId(actorId)
         setIsActorCardOpen(true)
+    }
+
+    // 🎬 Открыть карточку режиссёра
+    const handleOpenDirectorCard = (directorId) => {
+        setSelectedDirectorId(directorId)
+        setIsDirectorCardOpen(true)
     }
 
     // 🎪 Открыть фич-модалку по типу
@@ -86,32 +134,87 @@ function App() {
         else if (type === 'upcoming') setIsUpcomingOpen(true)
         else setFeatureModalType(type)
     }
-    const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [user, setUser] = useState({
-        name: 'Гость',
-        avatar: null,
-        banner: null,
-        genres: ['Драма', 'Фантастика'],
-        favorites: [1, 3, 6],
-        collections: [
-            {
-                id: 1,
-                title: 'Вечерний релакс',
-                description: 'Фильмы для спокойного вечера с чашкой чая и пледом',
-                films: 2,
-                movieIds: [1, 4], // Начало, 1+1
-                gradient: 'linear-gradient(135deg, #667eea, #764ba2)'
-            },
-            {
-                id: 2,
-                title: 'Нолан-марафон',
-                description: 'Все фильмы Кристофера Нолана в хронологическом порядке',
-                films: 3,
-                movieIds: [1, 2, 3], // Начало, Интерстеллар, Тёмный рыцарь
-                gradient: 'linear-gradient(135deg, #f093fb, #f5576c)'
-            }
-        ]
-    })
+
+    // ❤️ Переключатель избранного для фильмов
+    const toggleFavoriteMovie = (movieId) => {
+        setUser(prev => {
+            const list = prev.favoriteMovies || []
+            const updated = list.includes(movieId)
+                ? list.filter(id => id !== movieId)
+                : [...list, movieId]
+            return { ...prev, favoriteMovies: updated }
+        })
+    }
+
+    // ❤️ Переключатель избранного для актёров
+    const toggleFavoriteActor = (actorId) => {
+        setUser(prev => {
+            const list = prev.favoriteActors || []
+            const updated = list.includes(actorId)
+                ? list.filter(id => id !== actorId)
+                : [...list, actorId]
+            return { ...prev, favoriteActors: updated }
+        })
+    }
+
+    // ❤️ Переключатель избранного для режиссёров
+    const toggleFavoriteDirector = (directorId) => {
+        setUser(prev => {
+            const list = prev.favoriteDirectors || []
+            const updated = list.includes(directorId)
+                ? list.filter(id => id !== directorId)
+                : [...list, directorId]
+            return { ...prev, favoriteDirectors: updated }
+        })
+    }
+
+    // ✏️ Обновление подборки
+    const updateCollection = (collectionId, updates) => {
+        setUser(prev => ({
+            ...prev,
+            collections: prev.collections.map(c =>
+                c.id === collectionId ? { ...c, ...updates, films: updates.movieIds?.length || c.films } : c
+            )
+        }))
+    }
+
+    // 🗑️ Удаление подборки
+    const deleteCollection = (collectionId) => {
+        setUser(prev => ({
+            ...prev,
+            collections: prev.collections.filter(c => c.id !== collectionId)
+        }))
+    }
+
+    // ➕ Добавить фильм в подборки
+    const addMovieToCollections = (collectionIds, movieId) => {
+        setUser(prev => ({
+            ...prev,
+            collections: prev.collections.map(c => {
+                if (collectionIds.includes(c.id)) {
+                    const movieIds = c.movieIds || []
+                    if (!movieIds.includes(movieId)) {
+                        return { ...c, movieIds: [...movieIds, movieId], films: (c.films || 0) + 1 }
+                    }
+                }
+                return c
+            })
+        }))
+    }
+
+    // ✨ Создать новую подборку
+    const createNewCollection = (newColData) => {
+        const newCollection = {
+            id: Date.now(),
+            title: newColData.title,
+            description: newColData.description,
+            gradient: newColData.gradient,
+            movieIds: newColData.movieIds || [],
+            films: newColData.movieIds?.length || 0
+        }
+        setUser(prev => ({ ...prev, collections: [...prev.collections, newCollection] }))
+        return newCollection
+    }
 
     return (
         <Router>
@@ -122,44 +225,45 @@ function App() {
                     <div className="glow-right"></div>
                 </div>
 
-                {/* Шапка с поиском */}
+                {/* Шапка */}
                 <Header
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
-                    onActorClick={handleOpenActorCard} // ← Теперь функция существует!
-                    onDirectorClick={handleOpenDirectorCard} // ← ДОБАВЬ
+                    onActorClick={handleOpenActorCard}
+                    onDirectorClick={handleOpenDirectorCard}
+                    actorsDB={actorsDB}
+                    directorsDB={directorsDB}
                 />
 
                 <Routes>
                     <Route path="/" element={
-                        <Home
-                            onMovieClick={handleOpenMovieModal}
-                            onOpenFeatureModal={handleOpenFeatureModal}
-                        />
-                    } />
-                    <Route path="/catalog" element={<Catalog />} />
-                    <Route path="/selection" element={<SelectionPage />} />
-                    <Route path="/auth" element={
-                        <AuthModal
-                            setIsLoggedIn={setIsLoggedIn}
-                            setUser={setUser}  // ← Передаем функцию обновления пользователя
-                        />
-                    } />
-                    <Route path="/" element={
                         isLoggedIn ? (
-                            <Home onMovieClick={handleOpenMovieModal} onOpenFeatureModal={handleOpenFeatureModal} />
+                            <Home
+                                onMovieClick={handleOpenMovieModal}
+                                onOpenFeatureModal={handleOpenFeatureModal}
+                            />
                         ) : (
                             <Navigate to="/auth" replace />
                         )
                     } />
-                    <Route path="/auth" element={<AuthModal setIsLoggedIn={setIsLoggedIn} />} />
+                    <Route path="/auth" element={
+                        <AuthModal setIsLoggedIn={setIsLoggedIn} setUser={setUser} />
+                    } />
                     <Route path="/profile" element={
-                        <ProfilePage
-                            user={user}
-                            setUser={setUser}
-                            allMovies={moviesData}
-                            onMovieClick={handleOpenMovieModal}
-                        />
+                        isLoggedIn ? (
+                            <ProfilePage
+                                user={user}
+                                setUser={setUser}
+                                allMovies={moviesData}
+                                onMovieClick={handleOpenMovieModal}
+                                onActorClick={handleOpenActorCard}
+                                onDirectorClick={handleOpenDirectorCard}
+                                actorsDB={actorsDB}
+                                directorsDB={directorsDB}
+                            />
+                        ) : (
+                            <Navigate to="/auth" replace />
+                        )
                     } />
                     <Route path="/catalog" element={<Catalog />} />
                     <Route path="/selection" element={<SelectionPage />} />
@@ -172,17 +276,42 @@ function App() {
                     onClose={() => setIsMovieModalOpen(false)}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
+                    favoriteMovies={user.favoriteMovies}
+                    onToggleFavorite={toggleFavoriteMovie}
+                    userCollections={user.collections}
+                    onAddToCollection={addMovieToCollections}
+                    onCreateCollection={createNewCollection}
                 />
 
                 <FeatureModal type={featureModalType} isOpen={!!featureModalType} onClose={() => setFeatureModalType(null)} />
-                <SelectionModal isOpen={isSelectionOpen} onClose={() => setIsSelectionOpen(false)} allMovies={moviesData} onMovieClick={handleOpenMovieModal} />
-                <RandomMovieModal isOpen={isRandomOpen} onClose={() => setIsRandomOpen(false)} allMovies={moviesData} onMovieClick={handleOpenMovieModal} />
+
+                <SelectionModal
+                    isOpen={isSelectionOpen}
+                    onClose={() => setIsSelectionOpen(false)}
+                    allMovies={moviesData}
+                    onMovieClick={handleOpenMovieModal}
+                    favoriteMovies={user.favoriteMovies}
+                    onToggleFavorite={toggleFavoriteMovie}
+                />
+
+                <RandomMovieModal
+                    isOpen={isRandomOpen}
+                    onClose={() => setIsRandomOpen(false)}
+                    allMovies={moviesData}
+                    onMovieClick={handleOpenMovieModal}
+                    favoriteMovies={user.favoriteMovies}
+                    onToggleFavorite={toggleFavoriteMovie}
+                />
+
                 <ActorSearchModal
                     isOpen={isActorOpen}
                     onClose={() => setIsActorOpen(false)}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
-                    onActorClick={handleOpenActorCard} // ← ДОБАВЬ ЭТУ СТРОКУ
+                    onActorClick={handleOpenActorCard}
+                    favoriteMovies={user.favoriteMovies}
+                    onToggleFavorite={toggleFavoriteMovie}
+                    actors={actorsDB}
                 />
 
                 <DirectorSearchModal
@@ -190,17 +319,29 @@ function App() {
                     onClose={() => setIsDirectorOpen(false)}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
-                    onDirectorClick={handleOpenDirectorCard} // ← ДОБАВЬ
+                    onDirectorClick={handleOpenDirectorCard}
+                    favoriteMovies={user.favoriteMovies}
+                    onToggleFavorite={toggleFavoriteMovie}
+                    directors={directorsDB}
                 />
-                <UpcomingModal isOpen={isUpcomingOpen} onClose={() => setIsUpcomingOpen(false)} allMovies={moviesData} onMovieClick={handleOpenMovieModal} />
 
-                {/* Карточка актёра */}
+                <UpcomingModal
+                    isOpen={isUpcomingOpen}
+                    onClose={() => setIsUpcomingOpen(false)}
+                    allMovies={moviesData}
+                    onMovieClick={handleOpenMovieModal}
+                    favoriteMovies={user.favoriteMovies}
+                    onToggleFavorite={toggleFavoriteMovie}
+                />
+
                 <ActorCardModal
                     isOpen={isActorCardOpen}
                     onClose={() => setIsActorCardOpen(false)}
                     actorId={selectedActorId}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
+                    isFavorite={user.favoriteActors?.includes(selectedActorId)}
+                    onToggleFavorite={toggleFavoriteActor}
                 />
 
                 <DirectorCardModal
@@ -209,11 +350,11 @@ function App() {
                     directorId={selectedDirectorId}
                     allMovies={moviesData}
                     onMovieClick={handleOpenMovieModal}
+                    isFavorite={user.favoriteDirectors?.includes(selectedDirectorId)}
+                    onToggleFavorite={toggleFavoriteDirector}
                 />
-
             </div>
         </Router>
-
     )
 }
 

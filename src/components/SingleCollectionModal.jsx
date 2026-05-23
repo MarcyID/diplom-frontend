@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Film, Star, Calendar, Clock, ChevronRight, Trash2, Pencil, Check, Search, Plus } from 'lucide-react'
+import { Share2, X, Film, Star, Calendar, Clock, ChevronRight, Trash2, Pencil, Check, Search, Plus } from 'lucide-react'
 
 export default function SingleCollectionModal({
                                                   isOpen, onClose, collection, allMovies, onMovieClick,
@@ -88,6 +88,26 @@ export default function SingleCollectionModal({
                                         <span><Film size={14} /> {collectionFilms.length} фильмов</span>
                                         <span>Создана {new Date(collection.id).toLocaleDateString('ru-RU')}</span>
                                     </div>
+                                    <button
+                                        className="share-collection-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const shareUrl = `${window.location.origin}/profile?collection=${collection.id}`;
+                                            navigator.clipboard.writeText(shareUrl).then(() => {
+                                                // Анимация подтверждения
+                                                const btn = e.currentTarget;
+                                                const originalText = btn.innerHTML;
+                                                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Скопировано!';
+                                                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                                                setTimeout(() => {
+                                                    btn.innerHTML = originalText;
+                                                    btn.style.background = '';
+                                                }, 2000);
+                                            });
+                                        }}
+                                    >
+                                        <Share2 size={16} /> Поделиться
+                                    </button>
                                 </div>
                             </div>
 

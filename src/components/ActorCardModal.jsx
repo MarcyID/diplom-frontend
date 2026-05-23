@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, User, Film, Star, Calendar, MapPin, Ruler, Briefcase } from 'lucide-react'
+import { X, Heart, Film, Star, Calendar, MapPin, Ruler, Briefcase } from 'lucide-react'
 
 // 🎬 Расширенная база актёров с биографией
 const actorsDetails = {
@@ -85,7 +85,7 @@ const actorsDetails = {
     }
 }
 
-function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick }) {
+function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick, isFavorite, onToggleFavorite }) {
     const actor = actorsDetails[actorId]
     if (!actor) return null
 
@@ -111,7 +111,7 @@ function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick }) {
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         >
-                            {/* Шапка */}
+                            {/* Кнопка закрытия */}
                             <button className="modal-close" onClick={onClose}>
                                 <X size={20} />
                             </button>
@@ -127,6 +127,15 @@ function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick }) {
                                         <span key={i} className="career-tag">{role}</span>
                                     ))}
                                 </div>
+
+                                {/* 🔥 КНОПКА "В ИЗБРАННОЕ" (по центру, под тегами) */}
+                                <button
+                                    className={`favorite-action-btn ${isFavorite ? 'active' : ''}`}
+                                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(actor.id); }}
+                                >
+                                    <Heart size={18} fill={isFavorite ? "#fff" : "none"} />
+                                    <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
+                                </button>
                             </div>
 
                             {/* Биография — 4 карточки в ряд */}
@@ -173,7 +182,7 @@ function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick }) {
                             <div className="actor-filmography-section">
                                 <h3 className="filmography-title">
                                     <Film size={20} />
-                                    Фильмы
+                                    Фильмы в нашей базе
                                 </h3>
 
                                 <div className="filmography-grid">

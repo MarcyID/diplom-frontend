@@ -1,8 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Film, Star, Calendar, MapPin, Ruler, Briefcase } from 'lucide-react'
+import { X, Heart, Film, Star, Calendar, MapPin, Ruler, Briefcase } from 'lucide-react'
 
 // 🎬 Расширенная база режиссёров с биографией
-// 🎬 Данные с добавленным полем height
 const directorsDetails = {
     1: {
         id: 1, name: 'Кристофер Нолан', avatar: '🎬',
@@ -37,7 +36,7 @@ const directorsDetails = {
         filmsCount: 18, filmsPeriod: '1993 — 2026', movies: [6]
     },
     5: {
-        id: 5, name: 'Фрэнк Дарабонт', avatar: '',
+        id: 5, name: 'Фрэнк Дарабонт', avatar: '🎬',
         career: ['Режиссер', 'Сценарист', 'Продюсер'],
         height: '1.85 м', birthDate: '28 января, 1959', zodiac: 'Водолей', age: 67,
         birthPlace: 'Монбельяр, Франция',
@@ -54,7 +53,7 @@ const directorsDetails = {
     }
 }
 
-function DirectorCardModal({ isOpen, onClose, directorId, allMovies, onMovieClick }) {
+function DirectorCardModal({ isOpen, onClose, directorId, allMovies, onMovieClick, isFavorite, onToggleFavorite }) {
     const director = directorsDetails[directorId]
     if (!director) return null
 
@@ -80,7 +79,7 @@ function DirectorCardModal({ isOpen, onClose, directorId, allMovies, onMovieClic
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         >
-                            {/* Шапка */}
+                            {/* Кнопка закрытия (осталась в углу) */}
                             <button className="modal-close" onClick={onClose}>
                                 <X size={20} />
                             </button>
@@ -96,11 +95,19 @@ function DirectorCardModal({ isOpen, onClose, directorId, allMovies, onMovieClic
                                         <span key={i} className="career-tag">{role}</span>
                                     ))}
                                 </div>
+
+                                {/* 🔥 КНОПКА "В ИЗБРАННОЕ" (по центру, под тегами) */}
+                                <button
+                                    className={`favorite-action-btn ${isFavorite ? 'active' : ''}`}
+                                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(director.id); }}
+                                >
+                                    <Heart size={18} fill={isFavorite ? "#fff" : "none"} />
+                                    <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
+                                </button>
                             </div>
 
                             {/* Биография — 4 карточки в ряд */}
                             <div className="director-bio-grid">
-
                                 <div className="bio-card">
                                     <Ruler size={20} className="bio-icon" />
                                     <span className="bio-label">Рост</span>
@@ -111,8 +118,8 @@ function DirectorCardModal({ isOpen, onClose, directorId, allMovies, onMovieClic
                                     <Calendar size={20} className="bio-icon" />
                                     <span className="bio-label">Дата рождения</span>
                                     <span className="bio-value">
-      {director.birthDate} • {director.zodiac}
-    </span>
+                                        {director.birthDate} • {director.zodiac}
+                                    </span>
                                 </div>
 
                                 <div className="bio-card">
@@ -127,7 +134,7 @@ function DirectorCardModal({ isOpen, onClose, directorId, allMovies, onMovieClic
                                     <span className="bio-value">{director.filmsCount}, {director.filmsPeriod}</span>
                                 </div>
 
-                                {/* Жанры — отдельной строкой (КАК У АКТЁРОВ) */}
+                                {/* Жанры — отдельной строкой */}
                                 <div className="bio-card full">
                                     <Briefcase size={20} className="bio-icon" />
                                     <span className="bio-label">Жанры</span>
@@ -160,9 +167,9 @@ function DirectorCardModal({ isOpen, onClose, directorId, allMovies, onMovieClic
                                                 <div className="film-card-meta">
                                                     <span>{movie.year}</span>
                                                     <span className="rating">
-                            <Star size={12} fill="#ffd700" color="#ffd700" />
+                                                        <Star size={12} fill="#ffd700" color="#ffd700" />
                                                         {movie.rating}
-                          </span>
+                                                    </span>
                                                 </div>
                                                 <span className="film-card-genre">{movie.genre}</span>
                                             </div>

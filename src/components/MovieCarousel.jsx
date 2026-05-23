@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Star, Clock, Calendar, Film } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Star, Clock, Calendar, Film, Heart } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-function MovieCarousel({ movies, onMovieClick }) {
+function MovieCarousel({ movies, onMovieClick, favoriteMovies = [], onToggleFavorite }) {
     const scrollRef = useRef(null)
     const [showLeftArrow, setShowLeftArrow] = useState(false)
     const [showRightArrow, setShowRightArrow] = useState(true)
@@ -53,6 +53,7 @@ function MovieCarousel({ movies, onMovieClick }) {
                         <motion.div
                             key={movie.id}
                             className="movie-card"
+                            style={{ position: 'relative' }}
                             initial={{ opacity: 0, x: 50 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
@@ -60,10 +61,8 @@ function MovieCarousel({ movies, onMovieClick }) {
                             whileHover={{ y: -10 }}
                             onClick={() => onMovieClick(movie)}
                         >
-                            <div
-                                className="movie-poster"
-                                style={{ background: movie.gradient }}
-                            >
+                            {/* Постер */}
+                            <div className="movie-poster" style={{ background: movie.gradient }}>
                                 <div className="poster-placeholder">
                                     <Film size={64} opacity={0.3} />
                                 </div>
@@ -71,17 +70,17 @@ function MovieCarousel({ movies, onMovieClick }) {
                                     <span className="watch-text">Подробнее</span>
                                 </div>
                             </div>
+
+                            {/* Информация */}
                             <div className="movie-info">
                                 <h3>{movie.title}</h3>
                                 <div className="movie-meta">
-                  <span className="year">
-                    <Calendar size={14} />
-                      {movie.year}
-                  </span>
+                                    <span className="year">
+                                        <Calendar size={14} /> {movie.year}
+                                    </span>
                                     <span className="duration">
-                    <Clock size={14} />
-                                        {movie.duration}
-                  </span>
+                                        <Clock size={14} /> {movie.duration}
+                                    </span>
                                 </div>
                                 <div className="movie-footer">
                                     <div className="rating">

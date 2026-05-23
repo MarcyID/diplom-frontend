@@ -3279,7 +3279,7 @@ img, svg, video { max-width: 100%; display: block; }
 
 /* === КНОПКА СМЕНЫ ФОНА === */
 .banner-edit-btn {
-  position: absolute; top: 1rem; right: 1rem; z-index: 20;
+  position: absolute; top: 6rem; right: 1rem; z-index: 20;
   background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,0.2); color: white;
   padding: 0.5rem 0.8rem; border-radius: 8px; cursor: pointer;
@@ -3839,5 +3839,1114 @@ img, svg, video { max-width: 100%; display: block; }
   .collection-actions-bar { flex-direction: column; padding: 1rem 1.5rem; }
   .action-btn-edit, .action-btn-delete, .action-btn-save, .action-btn-cancel {
     width: 100%; justify-content: center;
+  }
+}
+/* === FAVORITE BUTTON & HEADER ACTIONS === */
+/* === FAVORITE ACTION BUTTON (НОВОЕ МЕСТО) === */
+.favorite-action-btn {
+  margin-top: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-gray);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.favorite-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.favorite-action-btn.active {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.35);
+}
+
+.favorite-action-btn.active:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.5);
+}
+
+.favorite-action-btn:active {
+  transform: scale(0.96);
+}
+
+.favorite-action-btn svg {
+  transition: transform 0.2s ease;
+}
+.favorite-action-btn:hover svg {
+  transform: scale(1.15);
+}
+
+.favorite-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.08);
+}
+
+.favorite-btn.active {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: rgba(236, 72, 153, 0.4);
+  color: #ec4899;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25);
+}
+
+.favorite-btn:active {
+  transform: scale(0.92);
+}
+
+.favorite-btn svg {
+  transition: transform 0.2s ease;
+}
+
+/* Адаптив для шапки модалок */
+@media (max-width: 600px) {
+  .modal-header-actions {
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .favorite-btn, .modal-close {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* === MOVIE CARD FAVORITE BUTTON === */
+.movie-favorite-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(4px);
+  z-index: 5;
+}
+
+.movie-favorite-btn:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.movie-favorite-btn.active {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+}
+
+.movie-favorite-btn:active {
+  transform: scale(0.95);
+}
+
+.movie-favorite-btn svg {
+  transition: transform 0.2s ease;
+}
+.movie-favorite-btn:hover svg {
+  transform: scale(1.15);
+}
+
+/* === MODAL FAVORITE BUTTON === */
+.modal-favorite-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 3.5rem; /* Чуть левее крестика закрытия */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(6px);
+  z-index: 20;
+}
+
+.modal-favorite-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.08);
+}
+
+.modal-favorite-btn.active {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.35);
+}
+
+.modal-favorite-btn:active {
+  transform: scale(0.92);
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 600px) {
+  .movie-favorite-btn {
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .modal-favorite-btn {
+    top: 1rem;
+    right: 3rem;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* === КНОПКА ИЗБРАННОГО В МОДАЛКЕ ФИЛЬМА (внизу) === */
+.modal-info .favorite-action-btn {
+  width: 100%;
+  margin: 1.25rem 0 1.5rem;
+  padding: 0.8rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-gray);
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-info .favorite-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.modal-info .favorite-action-btn.active {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.35);
+}
+
+.modal-info .favorite-action-btn.active:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.5);
+}
+
+.modal-info .favorite-action-btn:active {
+  transform: scale(0.98);
+}
+
+.modal-info .favorite-action-btn svg {
+  transition: transform 0.2s ease;
+}
+.modal-info .favorite-action-btn:hover svg {
+  transform: scale(1.15);
+}
+
+/* === ADD TO COLLECTION MODAL === */
+.add-to-collection-modal {
+  background: var(--bg-card);
+  border-radius: 24px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  padding: 2rem;
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modal-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.modal-movie-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-gray);
+  margin: 0;
+}
+
+/* Форма создания */
+.create-collection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.modal-input,
+.modal-textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.modal-input:focus,
+.modal-textarea:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal-input::placeholder,
+.modal-textarea::placeholder {
+  color: var(--text-gray);
+}
+
+.modal-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.create-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Список подборок */
+.collections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.collections-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.collections-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.collection-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.collection-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.collection-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  cursor: pointer;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.collection-preview {
+  width: 48px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.6);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.collection-preview-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4));
+}
+
+.collection-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.collection-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collection-count {
+  font-size: 0.8rem;
+  color: var(--text-gray);
+}
+
+.collection-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.no-collections {
+  text-align: center;
+  color: var(--text-gray);
+  padding: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.create-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.85rem;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px dashed rgba(139, 92, 246, 0.4);
+  border-radius: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-new-btn:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-style: solid;
+}
+
+/* Кнопки действий */
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--text-gray);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.btn-add,
+.btn-create {
+  flex: 1;
+  padding: 0.85rem;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add:hover:not(:disabled),
+.btn-create:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+}
+
+.btn-add:disabled,
+.btn-create:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Адаптив */
+@media (max-width: 600px) {
+  .add-to-collection-modal {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+    padding: 1.5rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .create-actions {
+    flex-direction: column;
+  }
+}
+
+/* === FAVORITES SECTION === */
+.favorites-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.favorites-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.favorites-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.favorites-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.fav-tab {
+  padding: 0.5rem 0.85rem;
+  border: none;
+  background: transparent;
+  color: var(--text-gray);
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fav-tab.active {
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.fav-tab:hover:not(.active) {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.favorites-content {
+  min-height: 200px;
+}
+
+.favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Карточка избранного фильма */
+.favorite-item-card {
+  position: relative;
+  border-radius: 14px;
+  padding: 1rem;
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.favorite-item-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
+  z-index: 1;
+}
+
+.favorite-item-content {
+  position: relative;
+  z-index: 2;
+}
+
+.favorite-item-content h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.favorite-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-bottom: 0.3rem;
+}
+
+.favorite-item-meta .rating {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.favorite-item-genre {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Карточка избранного актёра/режиссёра */
+.favorite-person-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.favorite-person-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.favorite-person-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.favorite-person-avatar.director {
+  background: linear-gradient(135deg, #06b6d4, #10b981);
+}
+
+.favorite-person-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.favorite-person-info h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favorite-person-films {
+  font-size: 0.8rem;
+  color: var(--text-gray);
+}
+
+/* Кнопка удаления из избранного */
+.remove-favorite-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.favorite-item-card:hover .remove-favorite-btn,
+.favorite-person-card:hover .remove-favorite-btn {
+  opacity: 1;
+}
+
+.remove-favorite-btn:hover {
+  background: #ef4444;
+  transform: scale(1.1);
+}
+
+.favorites-empty {
+  text-align: center;
+  color: var(--text-gray);
+  padding: 2rem;
+  font-size: 0.95rem;
+  grid-column: 1 / -1;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .favorites-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .favorites-tabs {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .favorites-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* === FAVORITES VIEWER MODAL (ОБНОВЛЁННЫЙ) === */
+.favorites-viewer-modal {
+  background: var(--bg-card);
+  border-radius: 24px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  padding: 2rem;
+}
+
+.favorites-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.favorites-header h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.favorites-subtitle {
+  color: var(--text-gray);
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+.favorites-tabs {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.favorites-tabs .fav-tab {
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-gray);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.favorites-tabs .fav-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.favorites-tabs .fav-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+}
+
+.favorites-content-list {
+  min-height: 200px;
+}
+
+.favorites-all-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.favorites-category {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.category-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.favorites-films-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.favorite-film-card {
+  aspect-ratio: 2/3;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  transition: all 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.film-card-content {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+  color: white;
+}
+
+.film-card-content h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.film-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.4rem;
+}
+
+.film-card-meta .rating {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.film-card-genre {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.favorites-people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.favorite-person-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.favorite-person-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.favorite-person-item.director .person-avatar {
+  background: linear-gradient(135deg, #06b6d4, #10b981);
+}
+
+.person-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.person-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.person-info h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.person-info span {
+  font-size: 0.8rem;
+  color: var(--text-gray);
+}
+
+.favorites-empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-gray);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  grid-column: 1 / -1;
+}
+
+.favorites-empty-state p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.favorites-empty-state span {
+  font-size: 0.9rem;
+}
+
+/* Скроллбар */
+.favorites-viewer-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.favorites-viewer-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .favorites-viewer-modal {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+    padding: 1.5rem;
+  }
+
+  .favorites-tabs {
+    flex-direction: column;
+  }
+
+  .favorites-tabs .fav-tab {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .favorites-films-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .favorites-people-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* === SHARE BUTTON FOR COLLECTIONS === */
+
+/* В карточке подборки (профиль) */
+.action-share-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.action-share-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+.action-share-btn:active {
+  transform: scale(0.95);
+}
+
+/* В модалке подборки */
+.share-collection-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: var(--text-gray);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s;
+  margin: 1rem 2rem 0;
+}
+
+.share-collection-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.share-collection-btn:active {
+  transform: scale(0.98);
+}
+
+/* Анимация успеха */
+@keyframes shareSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.share-collection-btn.success {
+  animation: shareSuccess 0.3s ease;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+/* Адаптив */
+@media (max-width: 600px) {
+  .share-collection-btn {
+    margin: 1rem 1.5rem 0;
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
   }
 }

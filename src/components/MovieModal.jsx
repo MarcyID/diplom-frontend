@@ -1,19 +1,27 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Star, Clock, Calendar, Film, ChevronRight } from 'lucide-react'
+import { X, Heart, Star, Clock, Calendar, Film, ChevronRight, Plus } from 'lucide-react'
+import AddToCollectionModal from './AddToCollectionModal'
 
-function MovieModal({ movie, isOpen, onClose, allMovies, onMovieClick }) {
+function MovieModal({
+                        movie, isOpen, onClose, allMovies, onMovieClick,
+                        favoriteMovies = [], onToggleFavorite,
+                        userCollections = [], onAddToCollection, onCreateCollection
+                    }) {
     if (!movie) return null
 
-    // Находим похожие фильмы (по жанру, исключая текущий)
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+
     const similarMovies = allMovies
         ? allMovies.filter(m => m.id !== movie.id && m.genre === movie.genre).slice(0, 4)
         : []
+
+    const isFavorite = favoriteMovies?.includes(movie.id)
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Затемнение фона */}
                     <motion.div
                         className="modal-backdrop"
                         initial={{ opacity: 0 }}
@@ -22,7 +30,6 @@ function MovieModal({ movie, isOpen, onClose, allMovies, onMovieClick }) {
                         onClick={onClose}
                     />
 
-                    {/* Модальное окно */}
                     <div className="modal-container">
                         <motion.div
                             className="modal-content"
@@ -70,6 +77,7 @@ function MovieModal({ movie, isOpen, onClose, allMovies, onMovieClick }) {
 
                                     <p className="modal-description">{movie.description}</p>
 
+                                    {/* Основные действия */}
                                     <div className="modal-actions">
                                         <button
                                             className="btn-watch"
@@ -78,10 +86,21 @@ function MovieModal({ movie, isOpen, onClose, allMovies, onMovieClick }) {
                                             <Film size={20} />
                                             Смотреть на Кинопоиске
                                         </button>
-                                        <button className="btn-add">
-                                            Добавить в подборку
+
+                                        {/* 🔥 КНОПКА "ДОБАВИТЬ В ПОДБОРКУ" */}
+                                        <button className="btn-add" onClick={() => setIsAddModalOpen(true)}>
+                                            <Plus size={20} /> Добавить в подборку
                                         </button>
                                     </div>
+
+                                    {/* 🔥 КНОПКА "В ИЗБРАННОЕ" */}
+                                    <button
+                                        className={`favorite-action-btn ${isFavorite ? 'active' : ''}`}
+                                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(movie.id); }}
+                                    >
+                                        <Heart size={18} fill={isFavorite ? "#fff" : "none"} />
+                                        <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
+                                    </button>
 
                                     {/* Секция похожих фильмов */}
                                     {similarMovies.length > 0 && (
@@ -96,16 +115,16 @@ function MovieModal({ movie, isOpen, onClose, allMovies, onMovieClick }) {
                                                         key={similar.id}
                                                         className="similar-card"
                                                         style={{ background: similar.gradient || '#1a1a2e' }}
-                                                        onClick={() => onMovieClick(similar)} // ← ДОБАВЬ ЭТО
+                                                        onClick={() => onMovieClick(similar)}
                                                     >
                                                         <div className="similar-info">
                                                             <span className="similar-title-text">{similar.title}</span>
                                                             <div className="similar-meta">
                                                                 <span>{similar.year}</span>
                                                                 <span className="similar-rating">
-                                  <Star size={12} fill="#ffd700" color="#ffd700" />
+                                                                    <Star size={12} fill="#ffd700" color="#ffd700" />
                                                                     {similar.rating}
-                                </span>
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -117,6 +136,16 @@ function MovieModal({ movie, isOpen, onClose, allMovies, onMovieClick }) {
                             </div>
                         </motion.div>
                     </div>
+
+                    {/* 🔥 САМА МОДАЛКА ДОБАВЛЕНИЯ В ПОДБОРКУ (была пропущена!) */}
+                    <AddToCollectionModal
+                        isOpen={isAddModalOpen}
+                        onClose={() => setIsAddModalOpen(false)}
+                        movie={movie}
+                        collections={userCollections}
+                        onAddToCollection={onAddToCollection}
+                        onCreateCollection={onCreateCollection}
+                    />
                 </>
             )}
         </AnimatePresence>

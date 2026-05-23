@@ -134,11 +134,7 @@ function RandomMovieModal({ isOpen, onClose, allMovies, onMovieClick }) {
                                             onMouseEnter={() => setShowDetails(true)}
                                             onMouseLeave={() => setShowDetails(false)}
                                             onClick={() => {
-                                                // 🔥 Находим оригинальный фильм из allMovies по ID
-                                                const originalMovie = allMovies.find(m => m.id === randomMovie?.id)
-
-                                                // Передаём оригинал (чтобы "Похожие" сработали) или резервный вариант
-                                                onMovieClick(originalMovie || randomMovie)
+                                                onMovieClick(randomMovie)
                                                 onClose()
                                             }}
                                         >
