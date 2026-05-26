@@ -1,16 +1,168 @@
-# React + Vite
+# CineMatch — Приложение для подбора фильмов
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Современное веб-приложение для поиска и подбора фильмов с использованием React и Vite.
 
-Currently, two official plugins are available:
+![React](https://img.shields.io/badge/React-19.2.6-61dafb?style=flat&logo=react)
+![Vite](https://img.shields.io/badge/Vite-8.0.12-646cff?style=flat&logo=vite)
+![React Router](https://img.shields.io/badge/React_Router-7.15.1-ca4245?style=flat&logo=react-router)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🎬 Особенности
 
-## React Compiler
+- **Подбор фильмов** — ответьте на несколько вопросов и получите персонализированную рекомендацию
+- **Случайный фильм** — доверьтесь удаче для мгновенного выбора
+- **Поиск по актёрам** — найдите фильмы с любимыми актёрами
+- **Поиск по режиссёрам** — изучите фильмографию любимых режиссёров
+- **Коллекции** — создавайте собственные подборки фильмов
+- **Избранное** — сохраняйте понравившиеся фильмы
+- **Скоро в кино** — узнавайте о предстоящих премьерах
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠 Технологии
 
-## Expanding the ESLint configuration
+### Основные
+- **React 19.2.6** — UI библиотека
+- **Vite 8.0.12** — сборщик и dev-сервер
+- **React Router DOM 7.15.1** — навигация между страницами
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Библиотеки компонентов
+- **Framer Motion 12.39.0** — анимации и переходы
+- **Lucide React 1.16.0** — набор иконок
+
+### Инструменты разработки
+- **ESLint** — линтинг кода
+- **@vitejs/plugin-react** — плагин для React
+
+## 🚀 Быстрый старт
+
+### Требования
+- Node.js (рекомендуется последняя LTS версия)
+- npm или другой пакетный менеджер
+
+### Установка
+
+1. Клонируйте репозиторий:
+```bash
+git clone <repository-url>
+cd diplom-frontend
+```
+
+2. Установите зависимости:
+```bash
+npm install
+```
+
+3. Запустите development-сервер:
+```bash
+npm run dev
+```
+
+4. Откройте браузер по адресу `http://localhost:5173`
+
+## 📜 Доступные команды
+
+| Команда | Описание |
+|---------|----------|
+| `npm run dev` | Запуск dev-сервера с HMR |
+| `npm run build` | Сборка для продакшена |
+| `npm run preview` | Предпросмотр продакшен-сборки |
+| `npm run lint` | Проверка кода через ESLint |
+
+## 📁 Структура проекта
+
+```
+diplom-frontend/
+├── public/                 # Статические файлы
+│   ├── favicon.svg        # Фавиконка
+│   └── icons.svg          # SVG иконки
+├── src/
+│   ├── assets/            # Изображения и медиа
+│   │   ├── hero.png
+│   │   └── icons/
+│   ├── components/        # React компоненты
+│   │   ├── Header.jsx          # Шапка с поиском
+│   │   ├── Hero.jsx            # Главный экран с кнопками
+│   │   ├── MovieCarousel.jsx   # Карусель фильмов
+│   │   ├── MovieModal.jsx      # Модальное окно фильма
+│   │   ├── SelectionModal.jsx  # Подбор фильмов
+│   │   ├── RandomMovieModal.jsx # Случайный фильм
+│   │   ├── ActorSearchModal.jsx # Поиск по актёрам
+│   │   ├── DirectorSearchModal.jsx # Поиск по режиссёрам
+│   │   ├── UpcomingModal.jsx   # Скоро в кино
+│   │   ├── ActorCardModal.jsx  # Карточка актёра
+│   │   ├── DirectorCardModal.jsx # Карточка режиссёра
+│   │   ├── ProfilePage.jsx     # Профиль пользователя
+│   │   ├── AuthModal.jsx       # Авторизация
+│   │   └── FeatureModal.jsx    # Информационные модалки
+│   ├── App.jsx           # Главный компонент
+│   ├── App.css           # Стили приложения
+│   ├── main.jsx          # Точка входа
+│   └── index.css         # Глобальные стили
+├── index.html            # HTML шаблон
+├── package.json          # Зависимости и скрипты
+└── vite.config.js        # Конфигурация Vite
+```
+
+## 🎨 Дизайн
+
+Приложение использует современную тёмную тему с градиентными акцентами:
+
+- **Основные цвета**: фиолетовый (`#8b5cf6`), розовый (`#ec4899`), зелёный (`#10b981`)
+- **Фон**: тёмный с полупрозрачными слоями и эффектом blur
+- **Анимации**: плавные переходы через Framer Motion
+- **Адаптивность**: мобильная версия с перестроением сетки
+
+## 🎯 Функциональность
+
+### Главная страница
+- Герой-секция с 6 основными действиями
+- Карусель популярных фильмов
+- Быстрый поиск через шапку
+
+### Поиск
+- **По фильмам** — поиск по названию
+- **По актёрам** — база данных актёров с фильмографией
+- **По режиссёрам** — каталог режиссёров
+
+### Профиль пользователя
+- Избранные фильмы
+- Персональные коллекции
+- Настройки профиля
+
+## 📦 Сборка для продакшена
+
+```bash
+npm run build
+```
+
+Собранные файлы появятся в папке `dist/`. Для локального тестирования:
+
+```bash
+npm run preview
+```
+
+## 🔧 Конфигурация
+
+### Vite
+Конфигурация находится в `vite.config.js`:
+- Плагин `@vitejs/plugin-react` для поддержки JSX
+- Стандартные настройки для React 19
+
+### ESLint
+Настройки в `eslint.config.js`:
+- Правила для React Hooks
+- Плагин react-refresh для HMR
+
+## 🤝 Вклад
+
+1. Fork репозитория
+2. Создайте ветку (`git checkout -b feature/amazing-feature`)
+3. Commit изменений (`git commit -m 'Add amazing feature'`)
+4. Push в ветку (`git push origin feature/amazing-feature`)
+5. Откройте Pull Request
+
+## 📄 Лицензия
+
+Этот проект создан в рамках дипломной работы.
+
+## 📞 Контакты
+
+По вопросам обращайтесь через Issues на GitHub.

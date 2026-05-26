@@ -1,95 +1,85 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, Film, Star, Calendar, MapPin, Ruler, Briefcase } from 'lucide-react'
+import { X, Heart, Briefcase, VenusAndMars, Calendar, MapPin, Ruler } from 'lucide-react'
+import { usePerson } from '../hooks/useKinopoisk.js'
 
-// 🎬 Расширенная база актёров с биографией
-const actorsDetails = {
-    1: {
-        id: 1, name: 'Леонардо ДиКаприо', avatar: '🎭',
-        career: ['Актер', 'Продюсер', 'Сценарист'],
-        height: '1.83 м', birthDate: '11 ноября, 1974', zodiac: 'Скорпион', age: 51,
-        birthPlace: 'Лос-Анджелес, Калифорния, США',
-        genres: ['драма', 'документальный', 'триллер', 'биография', 'криминал'],
-        filmsCount: 285, filmsPeriod: '1984 — 2026', movies: [1, 2, 7]
-    },
-    2: {
-        id: 2, name: 'Кристиан Бэйл', avatar: '🦇',
-        career: ['Актер', 'Продюсер'],
-        height: '1.83 м', birthDate: '30 января, 1974', zodiac: 'Водолей', age: 52,
-        birthPlace: 'Хаверфордвест, Уэльс, Великобритания',
-        genres: ['боевик', 'драма', 'триллер', 'биография'],
-        filmsCount: 178, filmsPeriod: '1986 — 2026', movies: [3]
-    },
-    3: {
-        id: 3, name: 'Джозеф Гордон-Левитт', avatar: '🎬',
-        career: ['Актер', 'Режиссер', 'Сценарист'],
-        height: '1.77 м', birthDate: '17 февраля, 1981', zodiac: 'Водолей', age: 45,
-        birthPlace: 'Лос-Анджелес, Калифорния, США',
-        genres: ['фантастика', 'драма', 'комедия', 'триллер'],
-        filmsCount: 142, filmsPeriod: '1988 — 2026', movies: [1, 3]
-    },
-    4: {
-        id: 4, name: 'Том Харди', avatar: '🐯',
-        career: ['Актер', 'Продюсер'],
-        height: '1.75 м', birthDate: '15 сентября, 1977', zodiac: 'Дева', age: 48,
-        birthPlace: 'Хаммерсмит, Лондон, Великобритания',
-        genres: ['боевик', 'триллер', 'драма', 'фантастика'],
-        filmsCount: 95, filmsPeriod: '2001 — 2026', movies: [3, 5]
-    },
-    5: {
-        id: 5, name: 'Мэттью МакКонахи', avatar: '🤠',
-        career: ['Актер', 'Продюсер'],
-        height: '1.83 м', birthDate: '4 ноября, 1969', zodiac: 'Скорпион', age: 56,
-        birthPlace: 'Ювалде, Техас, США',
-        genres: ['драма', 'комедия', 'триллер', 'фантастика'],
-        filmsCount: 156, filmsPeriod: '1991 — 2026', movies: [2, 5]
-    },
-    6: {
-        id: 6, name: 'Хоакин Феникс', avatar: '🃏',
-        career: ['Актер', 'Продюсер', 'Саундтреки'],
-        height: '1.73 м', birthDate: '28 октября, 1974', zodiac: 'Скорпион', age: 51,
-        birthPlace: 'Сан-Хуан, Пуэрто-Рико',
-        genres: ['триллер', 'драма', 'биография', 'криминал'],
-        filmsCount: 112, filmsPeriod: '1982 — 2026', movies: [6]
-    },
-    7: {
-        id: 7, name: 'Тим Роббинс', avatar: '⚖️',
-        career: ['Актер', 'Режиссер', 'Сценарист', 'Продюсер'],
-        height: '1.96 м', birthDate: '16 октября, 1958', zodiac: 'Весы', age: 67,
-        birthPlace: 'Уэст-Ковина, Калифорния, США',
-        genres: ['драма', 'триллер', 'криминал', 'комедия'],
-        filmsCount: 134, filmsPeriod: '1984 — 2026', movies: [7]
-    },
-    8: {
-        id: 8, name: 'Джон Траволта', avatar: '💃',
-        career: ['Актер', 'Продюсер', 'Саундтреки'],
-        height: '1.88 м', birthDate: '18 февраля, 1954', zodiac: 'Водолей', age: 72,
-        birthPlace: 'Энглвуд, Нью-Джерси, США',
-        genres: ['криминал', 'драма', 'комедия', 'боевик'],
-        filmsCount: 198, filmsPeriod: '1975 — 2026', movies: [8]
-    },
-    9: {
-        id: 9, name: 'Ума Турман', avatar: '⚔️',
-        career: ['Актер', 'Продюсер', 'Модель'],
-        height: '1.81 м', birthDate: '29 апреля, 1970', zodiac: 'Телец', age: 56,
-        birthPlace: 'Бостон, Массачусетс, США',
-        genres: ['криминал', 'боевик', 'драма', 'комедия'],
-        filmsCount: 89, filmsPeriod: '1987 — 2026', movies: [8]
-    },
-    10: {
-        id: 10, name: 'Фрэнсис МакДорманд', avatar: '🎭',
-        career: ['Актер', 'Продюсер'],
-        height: '1.68 м', birthDate: '23 июня, 1957', zodiac: 'Рак', age: 68,
-        birthPlace: 'Чикаго, Иллинойс, США',
-        genres: ['драма', 'криминал', 'комедия', 'триллер'],
-        filmsCount: 124, filmsPeriod: '1984 — 2026', movies: [5, 7]
-    }
+// Форматирование даты: "1969-11-04" → "4 ноября, 1969"
+function formatDate(dateStr) {
+    if (!dateStr) return null
+    const date = new Date(dateStr)
+    const months = [
+        'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ]
+    const day = date.getDate()
+    const month = months[date.getMonth()]
+    const year = date.getFullYear()
+    return `${day} ${month}, ${year}`
 }
 
-function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick, isFavorite, onToggleFavorite }) {
-    const actor = actorsDetails[actorId]
-    if (!actor) return null
+// Подсчёт количества по профессиям
+function countProfessions(filmography) {
+    if (!filmography || filmography.length === 0) return []
+    const professionCount = {}
+    filmography.forEach(film => {
+        if (film.professionKey) {
+            const prof = film.professionKey
+            professionCount[prof] = (professionCount[prof] || 0) + 1
+        }
+    })
+    return Object.entries(professionCount)
+        .sort((a, b) => b[1] - a[1])
+        .map(([key, count]) => ({ key, count }))
+}
 
-    const actorMovies = allMovies.filter(m => actor.movies.includes(m.id))
+// Форматирование профессии для отображения
+function formatProfession(key) {
+    const map = {
+        'ACTOR': 'Актёр',
+        'PRODUCER': 'Продюсер',
+        'DIRECTOR': 'Режиссёр',
+        'WRITER': 'Сценарист',
+        'HIMSELF': 'Камео',
+        'HERSELF': 'Камео',
+        'HRONO_TITR_MALE': 'Хроника',
+        'HRONO_TITR_FEMALE': 'Хроника'
+    }
+    return map[key] || key
+}
+
+function ActorCardModal({ isOpen, onClose, actorId, onMovieClick, isFavorite, onToggleFavorite }) {
+    const { data: person, loading: personLoading } = usePerson(actorId)
+
+    const filmography = person?.films || []
+
+    if (!actorId || !isOpen) return null
+
+    if (personLoading) {
+        return (
+            <AnimatePresence>
+                {isOpen && (
+                    <>
+                        <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+                        <div className="modal-container">
+                            <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
+                                <div style={{
+                                    display: 'inline-block',
+                                    width: '40px',
+                                    height: '40px',
+                                    border: '4px solid #333',
+                                    borderTop: '4px solid #8b5cf6',
+                                    borderRadius: '50%',
+                                    animation: 'spin 1s linear infinite'
+                                }} />
+                                <p style={{ marginTop: '20px' }}>Загрузка персоны...</p>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+        )
+    }
+
+    if (!person) return null
 
     return (
         <AnimatePresence>
@@ -119,19 +109,23 @@ function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick, isF
                             {/* Профиль актёра */}
                             <div className="actor-profile-header">
                                 <div className="actor-avatar-large">
-                                    <span className="avatar-emoji">{actor.avatar}</span>
+                                    {person.posterUrl ? (
+                                        <img src={person.posterUrl} alt={person.nameRu || person.nameEn} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    ) : (
+                                        <span className="avatar-emoji">{(person.nameRu || person.nameEn || '?').charAt(0)}</span>
+                                    )}
                                 </div>
-                                <h2 className="actor-name">{actor.name}</h2>
+                                <h2 className="actor-name">{person.nameRu || person.nameEn}</h2>
                                 <div className="actor-career">
-                                    {actor.career.map((role, i) => (
-                                        <span key={i} className="career-tag">{role}</span>
-                                    ))}
+                                    {person.profession && (
+                                        <span className="career-tag">{person.profession}</span>
+                                    )}
                                 </div>
 
                                 {/* 🔥 КНОПКА "В ИЗБРАННОЕ" (по центру, под тегами) */}
                                 <button
                                     className={`favorite-action-btn ${isFavorite ? 'active' : ''}`}
-                                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(actor.id); }}
+                                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(person.personId); }}
                                 >
                                     <Heart size={18} fill={isFavorite ? "#fff" : "none"} />
                                     <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
@@ -140,76 +134,52 @@ function ActorCardModal({ isOpen, onClose, actorId, allMovies, onMovieClick, isF
 
                             {/* Биография — 4 карточки в ряд */}
                             <div className="actor-bio-grid">
-                                <div className="bio-card">
-                                    <Ruler size={20} className="bio-icon" />
-                                    <span className="bio-label">Рост</span>
-                                    <span className="bio-value">{actor.height}</span>
-                                </div>
-
-                                <div className="bio-card">
-                                    <Calendar size={20} className="bio-icon" />
-                                    <span className="bio-label">Дата рождения</span>
-                                    <span className="bio-value">
-                    {actor.birthDate} • {actor.zodiac}
-                  </span>
-                                </div>
-
-                                <div className="bio-card">
-                                    <MapPin size={20} className="bio-icon" />
-                                    <span className="bio-label">Место рождения</span>
-                                    <span className="bio-value">{actor.birthPlace}</span>
-                                </div>
-
-                                <div className="bio-card">
-                                    <Film size={20} className="bio-icon" />
-                                    <span className="bio-label">Всего фильмов</span>
-                                    <span className="bio-value">{actor.filmsCount}, {actor.filmsPeriod}</span>
-                                </div>
-
-                                {/* Жанры — отдельной строкой */}
-                                <div className="bio-card full">
-                                    <Briefcase size={20} className="bio-icon" />
-                                    <span className="bio-label">Жанры</span>
-                                    <div className="bio-genres">
-                                        {actor.genres.map((genre, i) => (
-                                            <span key={i} className="genre-chip-small">{genre}</span>
-                                        ))}
+                                {person.sex && (
+                                    <div className="bio-card">
+                                        <VenusAndMars size={20} className="bio-icon" />
+                                        <span className="bio-label">Пол</span>
+                                        <span className="bio-value">{person.sex === 'MALE' ? 'Мужской' : 'Женский'}</span>
                                     </div>
-                                </div>
-                            </div>
+                                )}
 
-                            {/* Фильмография */}
-                            <div className="actor-filmography-section">
-                                <h3 className="filmography-title">
-                                    <Film size={20} />
-                                    Фильмы в нашей базе
-                                </h3>
+                                {person.growth != null && person.growth > 0 && (
+                                    <div className="bio-card">
+                                        <Ruler size={20} className="bio-icon" />
+                                        <span className="bio-label">Рост</span>
+                                        <span className="bio-value">{person.growth} см</span>
+                                    </div>
+                                )}
 
-                                <div className="filmography-grid">
-                                    {actorMovies.length > 0 ? actorMovies.map(movie => (
-                                        <motion.div
-                                            key={movie.id}
-                                            className="filmography-card"
-                                            style={{ background: movie.gradient }}
-                                            whileHover={{ scale: 1.03 }}
-                                            onClick={() => { onMovieClick(movie); onClose(); }}
-                                        >
-                                            <div className="film-card-content">
-                                                <h4>{movie.title}</h4>
-                                                <div className="film-card-meta">
-                                                    <span>{movie.year}</span>
-                                                    <span className="rating">
-                            <Star size={12} fill="#ffd700" color="#ffd700" />
-                                                        {movie.rating}
-                          </span>
-                                                </div>
-                                                <span className="film-card-genre">{movie.genre}</span>
-                                            </div>
-                                        </motion.div>
-                                    )) : (
-                                        <p className="no-films">Нет фильмов этого актёра в нашей базе</p>
-                                    )}
-                                </div>
+                                {person.birthday && (
+                                    <div className="bio-card">
+                                        <Calendar size={20} className="bio-icon" />
+                                        <span className="bio-label">Дата рождения</span>
+                                        <span className="bio-value">{formatDate(person.birthday)}</span>
+                                    </div>
+                                )}
+
+                                {person.birthplace && (
+                                    <div className="bio-card">
+                                        <MapPin size={20} className="bio-icon" />
+                                        <span className="bio-label">Место рождения</span>
+                                        <span className="bio-value">{person.birthplace}</span>
+                                    </div>
+                                )}
+
+                                {filmography && filmography.length > 0 && (
+                                    <div className="bio-card full">
+                                        <Briefcase size={20} className="bio-icon" />
+                                        <span className="bio-label">Фильмография</span>
+                                        <div className="bio-genres">
+                                            <span className="genre-chip-small">{filmography.length} работ</span>
+                                            {countProfessions(filmography).map(({ key, count }) => (
+                                                <span key={key} className="genre-chip-small">
+                                                    {formatProfession(key)}: {count}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>

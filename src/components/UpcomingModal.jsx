@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Calendar, Clock, Film, Star, ChevronRight } from 'lucide-react'
+import { usePremieres } from '../hooks/useKinopoisk.js'
 
-// Форматирование даты
+// Форматирование даты: "2026-05-07" → "7 мая 2026"
 const formatDate = (dateString) => {
+    if (!dateString) return null
     const date = new Date(dateString)
     const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
     const day = date.getDate()
@@ -12,12 +13,41 @@ const formatDate = (dateString) => {
     return `${day} ${month} ${year}`
 }
 
-function UpcomingModal({ isOpen, onClose, allMovies, onMovieClick }) {
-    // Берём первые 10 фильмов и добавляем им даты премьер
-    const upcomingMovies = allMovies.slice(0, 10).map((movie, index) => ({
-        ...movie,
-        premiereDate: new Date(2026, 5 + index, 10 + index * 3) // Даты с июня 2026 по март 2027
-    }))
+// Форматирование месяца: "2026-05" → "май 2026"
+const formatMonthYear = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const months = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь']
+    const month = months[date.getMonth()]
+    const year = date.getFullYear()
+    return `${month} ${year}`
+}
+
+function UpcomingModal({ isOpen, onClose, onMovieClick }) {
+    const { data: premieres, loading, error } = usePremieres(1)
+
+    // Фильтруем прошедшие премьеры (оставляем только будущие)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const filteredPremieres = premieres.filter(movie => {
+        if (!movie.premiereRu) return true // Если нет даты, показываем
+        const premiereDate = new Date(movie.premiereRu)
+        premiereDate.setHours(0, 0, 0, 0)
+        return premiereDate > today
+    })
+
+    // Определяем текущий и следующий месяц для заголовка
+    const nextMonth = new Date()
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    const currentMonthStr = formatMonthYear(new Date().toISOString())
+    const nextMonthStr = formatMonthYear(nextMonth.toISOString())
+    
+    // Если год одинаковый, объединяем (май-июнь 2026)
+    const currentYear = new Date().getFullYear()
+    const nextYear = nextMonth.getFullYear()
+    const periodStr = currentYear === nextYear
+        ? `${currentMonthStr.split(' ')[0]}-${nextMonthStr.split(' ')[0]} ${currentYear}`
+        : `${currentMonthStr} — ${nextMonthStr}`
 
     return (
         <AnimatePresence>
@@ -48,16 +78,43 @@ function UpcomingModal({ isOpen, onClose, allMovies, onMovieClick }) {
                                     <Calendar size={28} className="upcoming-icon" />
                                     <div>
                                         <h2 className="upcoming-title">Скоро в кино</h2>
-                                        <p className="upcoming-subtitle">Премьеры 2026-2027</p>
+                                        <p className="upcoming-subtitle">Премьеры {periodStr}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Список фильмов */}
                             <div className="upcoming-list">
-                                {upcomingMovies.map((movie, index) => (
+                                {loading && (
+                                    <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
+                                        <div style={{
+                                            display: 'inline-block',
+                                            width: '40px',
+                                            height: '40px',
+                                            border: '4px solid #333',
+                                            borderTop: '4px solid #8b5cf6',
+                                            borderRadius: '50%',
+                                            animation: 'spin 1s linear infinite'
+                                        }} />
+                                        <p style={{ marginTop: '20px' }}>Загрузка премьер...</p>
+                                    </div>
+                                )}
+
+                                {error && (
+                                    <div style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
+                                        <p>Ошибка загрузки: {error.message}</p>
+                                    </div>
+                                )}
+
+                                {!loading && !error && filteredPremieres.length === 0 && (
+                                    <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
+                                        <p>Премьер пока нет</p>
+                                    </div>
+                                )}
+
+                                {!loading && !error && filteredPremieres.map((movie, index) => (
                                     <motion.div
-                                        key={movie.id}
+                                        key={movie.kinopoiskId || movie.id}
                                         className="upcoming-item"
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
@@ -65,36 +122,55 @@ function UpcomingModal({ isOpen, onClose, allMovies, onMovieClick }) {
                                         onClick={() => { onMovieClick(movie); onClose(); }}
                                     >
                                         {/* Превью карточки */}
-                                        <div className="upcoming-preview" style={{ background: movie.gradient }}>
-                                            <div className="preview-placeholder">
-                                                <Film size={40} opacity={0.4} />
-                                            </div>
-                                            <div className="preview-badge">
-                                                <Star size={12} fill="#ffd700" color="#ffd700" />
-                                                {movie.rating}
-                                            </div>
+                                        <div className="upcoming-preview" style={{ 
+                                            background: movie.posterUrl ? `url(${movie.posterUrlPreview || movie.posterUrl}) center/cover` : '#374151'
+                                        }}>
+                                            {!movie.posterUrl && (
+                                                <div className="preview-placeholder">
+                                                    <Film size={40} opacity={0.4} />
+                                                </div>
+                                            )}
+                                            {(movie.ratingKinopoisk || movie.rating) && (
+                                                <div className="preview-badge">
+                                                    <Star size={12} fill="#ffd700" color="#ffd700" />
+                                                    {movie.ratingKinopoisk || movie.rating}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Информация */}
                                         <div className="upcoming-info">
-                                            <h3 className="upcoming-movie-title">{movie.title}</h3>
+                                            <h3 className="upcoming-movie-title">{movie.nameRu || movie.title}</h3>
 
                                             <div className="upcoming-meta">
-                                                <div className="meta-row">
-                                                    <Calendar size={14} className="meta-icon" />
-                                                    <span className="premiere-date">{formatDate(movie.premiereDate)}</span>
-                                                </div>
+                                                {movie.premiereRu && (
+                                                    <div className="meta-row">
+                                                        <Calendar size={14} className="meta-icon" />
+                                                        <span className="premiere-date">{formatDate(movie.premiereRu)}</span>
+                                                    </div>
+                                                )}
 
-                                                <div className="meta-row">
-                                                    <Clock size={14} className="meta-icon" />
-                                                    <span>{movie.duration}</span>
-                                                </div>
+                                                {!movie.premiereRu && movie.year && (
+                                                    <div className="meta-row">
+                                                        <Calendar size={14} className="meta-icon" />
+                                                        <span style={{ color: '#ef4444', fontWeight: 700 }}>{movie.year}</span>
+                                                    </div>
+                                                )}
+
+                                                {movie.filmLength && (
+                                                    <div className="meta-row">
+                                                        <Clock size={14} className="meta-icon" />
+                                                        <span>{movie.filmLength} мин</span>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            <div className="upcoming-genre">
-                                                <Film size={12} />
-                                                {movie.genre}
-                                            </div>
+                                            {movie.genres && movie.genres.length > 0 && (
+                                                <div className="upcoming-genre">
+                                                    <Film size={12} />
+                                                    {movie.genres[0].genre.charAt(0).toUpperCase() + movie.genres[0].genre.slice(1)}
+                                                </div>
+                                            )}
 
                                             <button className="details-btn">
                                                 Подробнее

@@ -4,19 +4,21 @@ import {
     User, Edit3, Plus, Film, Pencil, Trash2,
     Heart, Bookmark, Clock, Share2, Settings,
     TrendingUp, Calendar, MapPin, Camera, Image,
-    ChevronRight, X, Star
+    ChevronRight, X, Star, LogOut
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import CreateCollectionModal from './CreateCollectionModal'
 import CollectionsViewerModal from './CollectionsViewerModal'
 import FavoritesViewerModal from './FavoritesViewerModal'
 import SingleCollectionModal from './SingleCollectionModal'
+import { logout } from '../services/auth'
 
 
 export default function ProfilePage({
-                                        user, setUser, allMovies, onMovieClick,
-                                        onActorClick, onDirectorClick,
-                                        actorsDB = [], directorsDB = [] // ← дефолтные пустые массивы на случай undefined
+                                        user, setUser, isLoggedIn, onMovieClick,
+                                        onActorClick, onDirectorClick
                                     }) {
+    const navigate = useNavigate()
     const avatarInputRef = useRef(null)
     const bannerInputRef = useRef(null)
     const [isEditingName, setIsEditingName] = useState(false)
@@ -46,6 +48,17 @@ export default function ProfilePage({
     }, [user.collections]);
 
     const allGenres = ['Драма', 'Фантастика', 'Триллер', 'Комедия', 'Боевик', 'Ужасы', 'Мелодрама', 'Детектив', 'Анимация', 'Документальный']
+
+    // Выход из аккаунта
+    const handleLogout = async () => {
+        try {
+            await logout()
+            navigate('/')
+            window.location.reload()
+        } catch (error) {
+            console.error('Logout failed:', error)
+        }
+    }
 
     // Сохранение имени
     const saveName = () => {
@@ -142,10 +155,10 @@ export default function ProfilePage({
 
     const totalFilms = user.collections.reduce((a, c) => a + (c.films || 0), 0)
 
-    // 🔥 Получаем избранные элементы
-    const favoriteMoviesList = (user.favoriteMovies || []).map(id => allMovies.find(m => m.id === id)).filter(Boolean)
-    const favoriteActorsList = (user.favoriteActors || []).map(id => actorsDB.find(a => a.id === id)).filter(Boolean)
-    const favoriteDirectorsList = (user.favoriteDirectors || []).map(id => directorsDB.find(d => d.id === id)).filter(Boolean)
+    // 🔥 Избранные элементы (показываем только количество, т.к. данные из API)
+    const favoriteMoviesCount = (user.favoriteMovies || []).length
+    const favoriteActorsCount = (user.favoriteActors || []).length
+    const favoriteDirectorsCount = (user.favoriteDirectors || []).length
 
     return (
         <div className="profile-page">
@@ -196,6 +209,11 @@ export default function ProfilePage({
                     <div className="profile-actions">
                         <button className="action-btn secondary"><Share2 size={16} /> Поделиться</button>
                         <button className="action-btn primary"><Settings size={16} /> Настройки</button>
+                        {isLoggedIn && (
+                            <button className="action-btn danger" onClick={handleLogout}>
+                                <LogOut size={16} /> Выйти
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -328,19 +346,19 @@ export default function ProfilePage({
                                         className={`fav-tab ${favoritesTab === 'movies' ? 'active' : ''}`}
                                         onClick={() => setFavoritesTab('movies')}
                                     >
-                                        Фильмы ({favoriteMoviesList.length})
+                                        Фильмы ({favoriteMoviesCount})
                                     </button>
                                     <button
                                         className={`fav-tab ${favoritesTab === 'actors' ? 'active' : ''}`}
                                         onClick={() => setFavoritesTab('actors')}
                                     >
-                                        Актёры ({favoriteActorsList.length})
+                                        Актёры ({favoriteActorsCount})
                                     </button>
                                     <button
                                         className={`fav-tab ${favoritesTab === 'directors' ? 'active' : ''}`}
                                         onClick={() => setFavoritesTab('directors')}
                                     >
-                                        Режиссёры ({favoriteDirectorsList.length})
+                                        Режиссёры ({favoriteDirectorsCount})
                                     </button>
                                 </div>
                             </div>
@@ -349,30 +367,12 @@ export default function ProfilePage({
                                 {/* Фильмы */}
                                 {favoritesTab === 'movies' && (
                                     <div className="favorites-grid">
-                                        {favoriteMoviesList.length > 0 ? favoriteMoviesList.map(movie => (
-                                            <motion.div
-                                                key={movie.id}
-                                                className="favorite-item-card"
-                                                style={{ background: movie.gradient }}
-                                                whileHover={{ scale: 1.02 }}
-                                                onClick={() => onMovieClick(movie)}
-                                            >
-                                                <button
-                                                    className="remove-favorite-btn"
-                                                    onClick={(e) => { e.stopPropagation(); removeFromFavorites('movie', movie.id); }}
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                                <div className="favorite-item-content">
-                                                    <h4>{movie.title}</h4>
-                                                    <div className="favorite-item-meta">
-                                                        <span>{movie.year}</span>
-                                                        <span className="rating"><Star size={10} fill="#ffd700" /> {movie.rating}</span>
-                                                    </div>
-                                                    <span className="favorite-item-genre">{movie.genre}</span>
-                                                </div>
-                                            </motion.div>
-                                        )) : (
+                                        {favoriteMoviesCount > 0 ? (
+                                            <button className="view-favorites-btn" onClick={() => setIsFavoritesViewerOpen(true)}>
+                                                <Heart size={20} fill="#ec4899" color="#ec4899" />
+                                                <span>Посмотреть {favoriteMoviesCount} избранных фильмов</span>
+                                            </button>
+                                        ) : (
                                             <p className="favorites-empty">Нет избранных фильмов</p>
                                         )}
                                     </div>
@@ -381,28 +381,12 @@ export default function ProfilePage({
                                 {/* Актёры */}
                                 {favoritesTab === 'actors' && (
                                     <div className="favorites-grid">
-                                        {favoriteActorsList.length > 0 ? favoriteActorsList.map(actor => (
-                                            <motion.div
-                                                key={actor.id}
-                                                className="favorite-person-card"
-                                                whileHover={{ scale: 1.02 }}
-                                                onClick={() => onActorClick(actor.id)}
-                                            >
-                                                <button
-                                                    className="remove-favorite-btn"
-                                                    onClick={(e) => { e.stopPropagation(); removeFromFavorites('actor', actor.id); }}
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                                <div className="favorite-person-avatar">
-                                                    <span className="avatar-emoji">{actor.avatar}</span>
-                                                </div>
-                                                <div className="favorite-person-info">
-                                                    <h4>{actor.name}</h4>
-                                                    <span className="favorite-person-films">{actor.movies?.length || 0} фильмов</span>
-                                                </div>
-                                            </motion.div>
-                                        )) : (
+                                        {favoriteActorsCount > 0 ? (
+                                            <button className="view-favorites-btn" onClick={() => setIsFavoritesViewerOpen(true)}>
+                                                <User size={20} />
+                                                <span>Посмотреть {favoriteActorsCount} избранных актёров</span>
+                                            </button>
+                                        ) : (
                                             <p className="favorites-empty">Нет избранных актёров</p>
                                         )}
                                     </div>
@@ -411,28 +395,12 @@ export default function ProfilePage({
                                 {/* Режиссёры */}
                                 {favoritesTab === 'directors' && (
                                     <div className="favorites-grid">
-                                        {favoriteDirectorsList.length > 0 ? favoriteDirectorsList.map(director => (
-                                            <motion.div
-                                                key={director.id}
-                                                className="favorite-person-card"
-                                                whileHover={{ scale: 1.02 }}
-                                                onClick={() => onDirectorClick(director.id)}
-                                            >
-                                                <button
-                                                    className="remove-favorite-btn"
-                                                    onClick={(e) => { e.stopPropagation(); removeFromFavorites('director', director.id); }}
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                                <div className="favorite-person-avatar director">
-                                                    <span className="avatar-emoji">{director.avatar}</span>
-                                                </div>
-                                                <div className="favorite-person-info">
-                                                    <h4>{director.name}</h4>
-                                                    <span className="favorite-person-films">{director.movies?.length || 0} фильмов</span>
-                                                </div>
-                                            </motion.div>
-                                        )) : (
+                                        {favoriteDirectorsCount > 0 ? (
+                                            <button className="view-favorites-btn" onClick={() => setIsFavoritesViewerOpen(true)}>
+                                                <Clapperboard size={20} />
+                                                <span>Посмотреть {favoriteDirectorsCount} избранных режиссёров</span>
+                                            </button>
+                                        ) : (
                                             <p className="favorites-empty">Нет избранных режиссёров</p>
                                         )}
                                     </div>
@@ -450,8 +418,6 @@ export default function ProfilePage({
                 isOpen={isCollectionsViewerOpen}
                 onClose={() => setIsCollectionsViewerOpen(false)}
                 collections={user.collections}
-                allMovies={allMovies}
-                onMovieClick={onMovieClick}
             />
 
             <FavoritesViewerModal
@@ -460,12 +426,9 @@ export default function ProfilePage({
                 favoriteMovies={user.favoriteMovies || []}
                 favoriteActors={user.favoriteActors || []}
                 favoriteDirectors={user.favoriteDirectors || []}
-                allMovies={allMovies}
                 onMovieClick={onMovieClick}
                 onActorClick={onActorClick}
                 onDirectorClick={onDirectorClick}
-                actorsDB={actorsDB}
-                directorsDB={directorsDB}
             />
 
             <SingleCollectionModal

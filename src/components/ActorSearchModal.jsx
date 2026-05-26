@@ -1,40 +1,49 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, User, Film, Star, ChevronRight } from 'lucide-react'
+import { useSearch, usePerson } from '../hooks/useKinopoisk.js'
 
-// 🎬 База актёров
-const actorsDB = [
-    { id: 1, name: 'Леонардо ДиКаприо', movies: [1, 2, 7] },
-    { id: 2, name: 'Кристиан Бэйл', movies: [3] },
-    { id: 3, name: 'Джозеф Гордон-Левитт', movies: [1, 3] },
-    { id: 4, name: 'Том Харди', movies: [3, 5] },
-    { id: 5, name: 'Мэттью МакКонахи', movies: [2, 5] },
-    { id: 6, name: 'Хоакин Феникс', movies: [6] },
-    { id: 7, name: 'Тим Роббинс', movies: [7] },
-    { id: 8, name: 'Джон Траволта', movies: [8] },
-    { id: 9, name: 'Ума Турман', movies: [8] },
-    { id: 10, name: 'Фрэнсис МакДорманд', movies: [5, 7] }
-]
-
-function ActorSearchModal({ isOpen, onClose, allMovies, onMovieClick, onActorClick }) {
+function ActorSearchModal({ isOpen, onClose, onMovieClick, onActorClick }) {
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedPerson, setSelectedPerson] = useState(null)
+    const { data: searchResults, loading } = useSearch(searchQuery)
 
-    // Фильтрация актёров по поиску
-    const filteredActors = useMemo(() => {
-        if (!searchQuery.trim()) return actorsDB
-        return actorsDB.filter(actor =>
-            actor.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    }, [searchQuery])
+    const persons = searchResults?.persons || []
 
-    const handleActorSelect = (actor) => {
-        // 🔥 Открываем карточку актёра
-        if (onActorClick) {
-            onActorClick(actor.id)
+    // Загружаем детали персоны с фильмографией при выборе
+    const selectedPersonId = selectedPerson?.kinopoiskId || selectedPerson?.personId || selectedPerson?.id
+    const { data: personDetails } = usePerson(selectedPersonId)
+    const filmography = personDetails?.films || []
+
+    // Сброс состояния при открытии
+    useEffect(() => {
+        if (isOpen) {
+            setSearchQuery('')
+            setSelectedPerson(null)
         }
-        // Закрываем текущую модалку поиска
-        onClose()
+    }, [isOpen])
+
+    const handlePersonSelect = (person) => {
+        setSelectedPerson(person)
     }
+
+    const handleBack = () => {
+        setSelectedPerson(null)
+    }
+
+    const handleOpenCard = () => {
+        const personId = selectedPerson?.personId || selectedPerson?.id || selectedPerson?.kinopoiskId
+        if (onActorClick && personId) {
+            onActorClick(personId)
+        }
+        // Не закрываем окно поиска - карточка откроется поверх
+    }
+
+    // Фильтруем фильмы где персона была актёром и сортируем (сначала general=true)
+    const actorFilms = (filmography || [])
+        .filter(f => f.professionKey === 'ACTOR')
+        .sort((a, b) => (b.general ? 1 : 0) - (a.general ? 1 : 0))
+        .slice(0, 20)
 
     return (
         <AnimatePresence>
@@ -61,46 +70,149 @@ function ActorSearchModal({ isOpen, onClose, allMovies, onMovieClick, onActorCli
                                 <button className="modal-close" onClick={onClose}>
                                     <X size={20} />
                                 </button>
-                                <h2 className="actor-title">Поиск по актёру</h2>
+                                {selectedPerson ? (
+                                    <button className="back-btn" onClick={handleBack}>
+                                        <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+                                        Назад к поиску
+                                    </button>
+                                ) : (
+                                    <h2 className="actor-title">Поиск по актёру</h2>
+                                )}
                             </div>
 
-                            {/* Поиск */}
-                            <div className="actor-search-view">
-                                <div className="search-wrapper">
-                                    <Search size={20} className="search-icon" />
-                                    <input
-                                        type="text"
-                                        placeholder="Введите имя актёра..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="actor-search-input"
-                                    />
-                                </div>
+                            {!selectedPerson ? (
+                                // 🔍 Экран поиска
+                                <div className="actor-search-view">
+                                    <div className="search-wrapper">
+                                        <Search size={20} className="search-icon" />
+                                        <input
+                                            type="text"
+                                            placeholder="Введите имя актёра..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="actor-search-input"
+                                        />
+                                    </div>
 
-                                {/* Список актёров */}
-                                <div className="actors-list">
-                                    {filteredActors.length > 0 ? filteredActors.map(actor => (
-                                        <button
-                                            key={actor.id}
-                                            className="actor-card"
-                                            onClick={() => handleActorSelect(actor)}
-                                        >
-                                            <div className="actor-avatar">
-                                                {actor.name.charAt(0)}
+                                    {/* Список персон */}
+                                    <div className="actors-list">
+                                        {loading && (
+                                            <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                                                <p>Поиск...</p>
                                             </div>
-                                            <div className="actor-info">
-                                                <span className="actor-name">{actor.name}</span>
+                                        )}
+
+                                        {!loading && persons.length > 0 && persons.map(person => (
+                                            <button
+                                                key={person.personId || person.id}
+                                                className="actor-card"
+                                                onClick={() => handlePersonSelect(person)}
+                                            >
+                                                <div className="actor-avatar">
+                                                    {person.posterUrl ? (
+                                                        <img src={person.posterUrl} alt={person.nameRu || person.nameEn} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                                    ) : (
+                                                        (person.nameRu || person.nameEn || '?').charAt(0)
+                                                    )}
+                                                </div>
+                                                <div className="actor-info">
+                                                    <span className="actor-name">{person.nameRu || person.nameEn}</span>
+                                                </div>
+                                                <ChevronRight size={18} className="actor-arrow" />
+                                            </button>
+                                        ))}
+
+                                        {!loading && searchQuery.trim() && persons.length === 0 && (
+                                            <div className="empty-state">
+                                                <User size={48} opacity={0.3} />
+                                                <p>Актёры не найдены</p>
                                             </div>
-                                            <ChevronRight size={18} className="actor-arrow" />
-                                        </button>
-                                    )) : (
-                                        <div className="empty-state">
-                                            <User size={48} opacity={0.3} />
-                                            <p>Актёр не найден</p>
+                                        )}
+
+                                        {!loading && !searchQuery.trim() && (
+                                            <div className="empty-state">
+                                                <Search size={48} opacity={0.3} />
+                                                <p>Введите имя актёра для поиска</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                // 🎬 Экран фильмографии
+                                <div className="actor-filmography">
+                                    <div className="actor-profile">
+                                        <div className="actor-avatar-large">
+                                            {personDetails?.posterUrl || personDetails?.photoUrl ? (
+                                                <img src={personDetails.posterUrl || personDetails.photoUrl} alt={personDetails.nameRu || personDetails.nameEn} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                            ) : (
+                                                <span>{(selectedPerson.nameRu || selectedPerson.nameEn || '?').charAt(0)}</span>
+                                            )}
                                         </div>
-                                    )}
+                                        <div>
+                                            <h3 className="actor-profile-name">{selectedPerson.nameRu || selectedPerson.nameEn}</h3>
+                                            {personDetails?.profession && (
+                                                <span className="actor-profile-profession">{personDetails.profession}</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <button className="open-card-btn" onClick={handleOpenCard}>
+                                        <User size={18} />
+                                        Подробнее об актёре
+                                    </button>
+
+                                    <div className="filmography-section">
+                                        <h3 className="filmography-title">
+                                            <Film size={18} />
+                                            Фильмы с участием актёра
+                                        </h3>
+
+                                        <div className="filmography-list">
+                                            {!personDetails ? (
+                                                <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                                                    <p>Загрузка фильмографии...</p>
+                                                </div>
+                                            ) : actorFilms.length > 0 ? (
+                                                actorFilms.map(film => (
+                                                    <div
+                                                        key={film.filmId}
+                                                        className="filmography-item"
+                                                        onClick={() => {
+                                                            onMovieClick({ kinopoiskId: film.filmId, nameRu: film.nameRu, nameEn: film.nameEn })
+                                                            onClose()
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className="film-poster-mini"
+                                                            style={{
+                                                                background: film.posterUrl
+                                                                    ? `url(${film.posterUrl}) center/cover`
+                                                                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                                                            }}
+                                                        >
+                                                            {!film.posterUrl && <Film size={20} opacity={0.4} />}
+                                                        </div>
+                                                        <div className="film-info">
+                                                            <h4>{film.nameRu || film.nameEn}</h4>
+                                                            <div className="film-meta">
+                                                                {film.rating && (
+                                                                    <span className="rating">
+                                                                        <Star size={12} fill="#ffd700" color="#ffd700" />
+                                                                        {film.rating}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <ChevronRight size={16} className="film-arrow" />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="empty-films">Нет фильмов с участием этого актёра</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </motion.div>
                     </div>
                 </>

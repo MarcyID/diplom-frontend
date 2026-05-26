@@ -1,27 +1,19 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Film, Heart, Clapperboard, Star, Calendar, Clock } from 'lucide-react'
+import { X, Film, Heart, Clapperboard } from 'lucide-react'
 
 export default function FavoritesViewerModal({
                                                  isOpen, onClose,
                                                  favoriteMovies = [],
                                                  favoriteActors = [],
                                                  favoriteDirectors = [],
-                                                 allMovies,
                                                  onMovieClick,
                                                  onActorClick,
-                                                 onDirectorClick,
-                                                 actorsDB = [],
-                                                 directorsDB = []
+                                                 onDirectorClick
                                              }) {
-    const [activeTab, setActiveTab] = useState('all') // 'all' | 'movies' | 'actors' | 'directors'
+    const [activeTab, setActiveTab] = useState('movies') // 'movies' | 'actors' | 'directors'
 
-    // Получаем полные данные
-    const moviesList = favoriteMovies.map(id => allMovies.find(m => m.id === id)).filter(Boolean)
-    const actorsList = favoriteActors.map(id => actorsDB.find(a => a.id === id)).filter(Boolean)
-    const directorsList = favoriteDirectors.map(id => directorsDB.find(d => d.id === id)).filter(Boolean)
-
-    const totalCount = moviesList.length + actorsList.length + directorsList.length
+    const totalCount = favoriteMovies.length + favoriteActors.length + favoriteDirectors.length
 
     return (
         <AnimatePresence>
@@ -55,206 +47,52 @@ export default function FavoritesViewerModal({
                                 {/* Переключатель табов */}
                                 <div className="favorites-tabs">
                                     <button
-                                        className={`fav-tab ${activeTab === 'all' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('all')}
-                                    >
-                                        Всё ({totalCount})
-                                    </button>
-                                    <button
                                         className={`fav-tab ${activeTab === 'movies' ? 'active' : ''}`}
                                         onClick={() => setActiveTab('movies')}
                                     >
-                                        <Film size={14} /> Фильмы ({moviesList.length})
+                                        <Film size={14} /> Фильмы ({favoriteMovies.length})
                                     </button>
                                     <button
                                         className={`fav-tab ${activeTab === 'actors' ? 'active' : ''}`}
                                         onClick={() => setActiveTab('actors')}
                                     >
-                                        <Heart size={14} /> Актёры ({actorsList.length})
+                                        <Heart size={14} /> Актёры ({favoriteActors.length})
                                     </button>
                                     <button
                                         className={`fav-tab ${activeTab === 'directors' ? 'active' : ''}`}
                                         onClick={() => setActiveTab('directors')}
                                     >
-                                        <Clapperboard size={14} /> Режиссёры ({directorsList.length})
+                                        <Clapperboard size={14} /> Режиссёры ({favoriteDirectors.length})
                                     </button>
                                 </div>
                             </div>
 
                             <div className="favorites-content-list">
-                                {/* ВСЁ ВМЕСТЕ */}
-                                {activeTab === 'all' && (
-                                    <div className="favorites-all-section">
-                                        {totalCount === 0 ? (
-                                            <div className="favorites-empty-state">
-                                                <Heart size={48} opacity={0.3} />
-                                                <p>В избранном пока пусто</p>
-                                                <span>Добавляйте фильмы, актёров и режиссёров в избранное</span>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {moviesList.length > 0 && (
-                                                    <div className="favorites-category">
-                                                        <h3 className="category-title"><Film size={16} /> Фильмы</h3>
-                                                        <div className="favorites-films-grid">
-                                                            {moviesList.map(movie => (
-                                                                <motion.div
-                                                                    key={movie.id}
-                                                                    className="favorite-film-card"
-                                                                    style={{ background: movie.gradient }}
-                                                                    whileHover={{ scale: 1.03 }}
-                                                                    onClick={() => { onMovieClick(movie); onClose(); }}
-                                                                >
-                                                                    <div className="film-card-content">
-                                                                        <h4>{movie.title}</h4>
-                                                                        <div className="film-card-meta">
-                                                                            <span>{movie.year}</span>
-                                                                            <span className="rating">
-                                                                                <Star size={10} fill="#ffd700" color="#ffd700" />
-                                                                                {movie.rating}
-                                                                            </span>
-                                                                        </div>
-                                                                        <span className="film-card-genre">{movie.genre}</span>
-                                                                    </div>
-                                                                </motion.div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {actorsList.length > 0 && (
-                                                    <div className="favorites-category">
-                                                        <h3 className="category-title"><Heart size={16} /> Актёры</h3>
-                                                        <div className="favorites-people-grid">
-                                                            {actorsList.map(actor => (
-                                                                <motion.div
-                                                                    key={actor.id}
-                                                                    className="favorite-person-item"
-                                                                    whileHover={{ scale: 1.02 }}
-                                                                    onClick={() => { onActorClick(actor.id); onClose(); }}
-                                                                >
-                                                                    <div className="person-avatar">
-                                                                        <span>{actor.avatar}</span>
-                                                                    </div>
-                                                                    <div className="person-info">
-                                                                        <h4>{actor.name}</h4>
-                                                                        <span>{actor.movies?.length || 0} фильмов</span>
-                                                                    </div>
-                                                                </motion.div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {directorsList.length > 0 && (
-                                                    <div className="favorites-category">
-                                                        <h3 className="category-title"><Clapperboard size={16} /> Режиссёры</h3>
-                                                        <div className="favorites-people-grid">
-                                                            {directorsList.map(director => (
-                                                                <motion.div
-                                                                    key={director.id}
-                                                                    className="favorite-person-item director"
-                                                                    whileHover={{ scale: 1.02 }}
-                                                                    onClick={() => { onDirectorClick(director.id); onClose(); }}
-                                                                >
-                                                                    <div className="person-avatar">
-                                                                        <span>{director.avatar}</span>
-                                                                    </div>
-                                                                    <div className="person-info">
-                                                                        <h4>{director.name}</h4>
-                                                                        <span>{director.movies?.length || 0} фильмов</span>
-                                                                    </div>
-                                                                </motion.div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
+                                {totalCount === 0 ? (
+                                    <div className="favorites-empty-state">
+                                        <Heart size={48} opacity={0.3} />
+                                        <p>В избранном пока пусто</p>
+                                        <span>Добавляйте фильмы, актёров и режиссёров в избранное</span>
                                     </div>
-                                )}
-
-                                {/* ТОЛЬКО ФИЛЬМЫ */}
-                                {activeTab === 'movies' && (
-                                    <div className="favorites-films-grid">
-                                        {moviesList.length > 0 ? moviesList.map(movie => (
-                                            <motion.div
-                                                key={movie.id}
-                                                className="favorite-film-card"
-                                                style={{ background: movie.gradient }}
-                                                whileHover={{ scale: 1.03 }}
-                                                onClick={() => { onMovieClick(movie); onClose(); }}
-                                            >
-                                                <div className="film-card-content">
-                                                    <h4>{movie.title}</h4>
-                                                    <div className="film-card-meta">
-                                                        <span>{movie.year}</span>
-                                                        <span className="rating">
-                                                            <Star size={10} fill="#ffd700" color="#ffd700" />
-                                                            {movie.rating}
-                                                        </span>
-                                                    </div>
-                                                    <span className="film-card-genre">{movie.genre}</span>
-                                                </div>
-                                            </motion.div>
-                                        )) : (
-                                            <div className="favorites-empty-state">
-                                                <Film size={48} opacity={0.3} />
-                                                <p>Нет избранных фильмов</p>
+                                ) : (
+                                    <div className="favorites-info">
+                                        <p className="favorites-hint-title">Для просмотра деталей используйте поиск:</p>
+                                        {activeTab === 'movies' && (
+                                            <div className="favorites-hint">
+                                                <Film size={16} />
+                                                <span>ID фильмов: {favoriteMovies.join(', ') || '—'}</span>
                                             </div>
                                         )}
-                                    </div>
-                                )}
-
-                                {/* ТОЛЬКО АКТЁРЫ */}
-                                {activeTab === 'actors' && (
-                                    <div className="favorites-people-grid">
-                                        {actorsList.length > 0 ? actorsList.map(actor => (
-                                            <motion.div
-                                                key={actor.id}
-                                                className="favorite-person-item"
-                                                whileHover={{ scale: 1.02 }}
-                                                onClick={() => { onActorClick(actor.id); onClose(); }}
-                                            >
-                                                <div className="person-avatar">
-                                                    <span>{actor.avatar}</span>
-                                                </div>
-                                                <div className="person-info">
-                                                    <h4>{actor.name}</h4>
-                                                    <span>{actor.movies?.length || 0} фильмов</span>
-                                                </div>
-                                            </motion.div>
-                                        )) : (
-                                            <div className="favorites-empty-state">
-                                                <Heart size={48} opacity={0.3} />
-                                                <p>Нет избранных актёров</p>
+                                        {activeTab === 'actors' && (
+                                            <div className="favorites-hint">
+                                                <Heart size={16} />
+                                                <span>ID актёров: {favoriteActors.join(', ') || '—'}</span>
                                             </div>
                                         )}
-                                    </div>
-                                )}
-
-                                {/* ТОЛЬКО РЕЖИССЁРЫ */}
-                                {activeTab === 'directors' && (
-                                    <div className="favorites-people-grid">
-                                        {directorsList.length > 0 ? directorsList.map(director => (
-                                            <motion.div
-                                                key={director.id}
-                                                className="favorite-person-item director"
-                                                whileHover={{ scale: 1.02 }}
-                                                onClick={() => { onDirectorClick(director.id); onClose(); }}
-                                            >
-                                                <div className="person-avatar">
-                                                    <span>{director.avatar}</span>
-                                                </div>
-                                                <div className="person-info">
-                                                    <h4>{director.name}</h4>
-                                                    <span>{director.movies?.length || 0} фильмов</span>
-                                                </div>
-                                            </motion.div>
-                                        )) : (
-                                            <div className="favorites-empty-state">
-                                                <Clapperboard size={48} opacity={0.3} />
-                                                <p>Нет избранных режиссёров</p>
+                                        {activeTab === 'directors' && (
+                                            <div className="favorites-hint">
+                                                <Clapperboard size={16} />
+                                                <span>ID режиссёров: {favoriteDirectors.join(', ') || '—'}</span>
                                             </div>
                                         )}
                                     </div>
