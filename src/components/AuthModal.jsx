@@ -194,8 +194,6 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser }) {
                     </button>
                 </form>
 
-                {/* Скрыто временно - вернёмся к соцсетям позже */}
-                {/*
                 <div className="auth-divider"><span>или войти через</span></div>
 
                 <div className="social-grid">
@@ -203,7 +201,6 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser }) {
                     <button className="social-btn vk"><img src={vkIcon} alt="VK" /></button>
                     <button className="social-btn yandex"><img src={yandexIcon} alt="Yandex" /></button>
                 </div>
-                */}
                             </div>
                         </motion.div>
                     </div>
