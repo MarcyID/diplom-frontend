@@ -16,7 +16,7 @@ import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
 import { isAuthenticated, getUser, getMe, clearAuthData, ensureValidToken } from './services/auth'
 import { getProfile, updateProfile } from './services/profile'
-import { getMyCollections, createCollection, updateCollection as apiUpdateCollection, deleteCollection as apiDeleteCollection, addFilmToCollection, removeFilmFromCollection } from './services/collections'
+import { getMyCollections, createCollection, updateCollection as apiUpdateCollection, deleteCollection as apiDeleteCollection, addFilmToCollection, removeFilmFromCollection, getCollection } from './services/collections'
 import { getFavorites, toggleFilm, togglePerson } from './services/favorites'
 
 // Ключ для localStorage избранного
@@ -201,16 +201,19 @@ function App() {
                         const collectionsData = await getMyCollections(1, 100)
                         const items = collectionsData.items || []
 
-                        // Преобразуем в формат фронтенда
-                        const collections = items.map(col => ({
-                            id: col.id,
-                            title: col.title,
-                            description: col.description || '',
-                            is_public: col.is_public,
-                            movieIds: [], // Заполним при загрузке детальной информации
-                            films: col.films_count || 0,
-                            created_at: col.created_at,
-                            updated_at: col.updated_at
+                        // Загружаем фильмы для каждой подборки
+                        const collections = await Promise.all(items.map(async (col) => {
+                            const collectionDetail = await getCollection(col.id)
+                            return {
+                                id: col.id,
+                                title: col.title,
+                                description: col.description || '',
+                                is_public: col.is_public,
+                                movieIds: collectionDetail?.films?.map(f => f.film_id) || [],
+                                films: collectionDetail?.films?.length || col.films_count || 0,
+                                created_at: col.created_at,
+                                updated_at: col.updated_at
+                            }
                         }))
 
                         setUser(prev => ({

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, User, Eye, EyeOff, ChevronRight, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { login, register } from '../services/auth'
-import { getMyCollections } from '../services/collections'
+import { getMyCollections, getCollection } from '../services/collections'
 
 // Импорты иконок
 import googleIcon from '../assets/icons/google.svg'
@@ -82,15 +82,20 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navi
                 try {
                     const collectionsData = await getMyCollections(1, 100)
                     const items = collectionsData.items || []
-                    const collections = items.map(col => ({
-                        id: col.id,
-                        title: col.title,
-                        description: col.description || '',
-                        is_public: col.is_public,
-                        movieIds: [],
-                        films: col.films_count || 0,
-                        created_at: col.created_at,
-                        updated_at: col.updated_at
+                    
+                    // Загружаем фильмы для каждой подборки
+                    const collections = await Promise.all(items.map(async (col) => {
+                        const collectionDetail = await getCollection(col.id)
+                        return {
+                            id: col.id,
+                            title: col.title,
+                            description: col.description || '',
+                            is_public: col.is_public,
+                            movieIds: collectionDetail?.films?.map(f => f.film_id) || [],
+                            films: collectionDetail?.films?.length || col.films_count || 0,
+                            created_at: col.created_at,
+                            updated_at: col.updated_at
+                        }
                     }))
                     setUser(prev => ({ ...prev, collections }))
                 } catch (err) {
