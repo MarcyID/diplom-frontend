@@ -56,8 +56,7 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navi
                 response = await register({
                     email,
                     username: name,
-                    password,
-                    full_name: name || undefined
+                    password
                 })
             }
 
@@ -69,7 +68,7 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navi
                     id: response.user.id,
                     email: response.user.email,
                     username: response.user.username,
-                    name: response.user.full_name || name,
+                    name: response.user.name || response.user.full_name || name,
                     avatar: response.user.avatar_url,
                     banner: response.user.banner_url,
                     createdAt: response.user.created_at

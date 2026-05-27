@@ -78,7 +78,8 @@ export default function ProfilePage({
             const prefs = await getGenrePreferences()
             setGenrePreferences(prefs)
         } catch (error) {
-            console.error('Failed to load genre preferences:', error)
+            // Жанр предпочтения не поддерживаются бэкендом
+            console.warn('Genre preferences not available:', error.message)
             setGenrePreferences([])
         }
     }
@@ -88,19 +89,19 @@ export default function ProfilePage({
         const newPreferences = genrePreferences.includes(genreId)
             ? genrePreferences.filter(id => id !== genreId)
             : [...genrePreferences, genreId]
-        
+
         setGenrePreferences(newPreferences)
 
         try {
             await updateGenrePreferences(newPreferences)
-            
+
             // Обновляем состояние пользователя в App.jsx
             setUser(prev => ({
                 ...prev,
                 genre_preferences: newPreferences
             }))
         } catch (error) {
-            console.error('Failed to save genre preferences:', error)
+            console.warn('Failed to save genre preferences (feature not available):', error.message)
             // Откат при ошибке
             setGenrePreferences(genrePreferences)
         }
@@ -538,7 +539,7 @@ export default function ProfilePage({
             {/* Баннер */}
             <div
                 className="profile-banner"
-                style={{ backgroundImage: user.banner ? `url(${user.banner})` : 'url(https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2525&auto=format&fit=crop)' }}
+                style={{ backgroundImage: user.banner ? `url(${user.banner})` : 'none', backgroundColor: 'var(--bg-main)' }}
             >
                 <div className="banner-overlay"></div>
                 <div className="banner-actions">
