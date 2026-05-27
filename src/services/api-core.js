@@ -9,6 +9,17 @@ const API_BASE_URL = 'http://localhost:5454'
 const ACCESS_TOKEN_KEY = 'access_token'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 
+// Callback для обработки истечения авторизации
+let onAuthExpiredCallback = null
+
+/**
+ * Установить callback для обработки истечения авторизации
+ * @param {Function} callback - Функция, вызываемая при 401 ошибке
+ */
+export function setAuthExpiredCallback(callback) {
+    onAuthExpiredCallback = callback
+}
+
 /**
  * Получить access token
  */
@@ -54,15 +65,24 @@ export async function fetchApi(endpoint, options = {}, requiresAuth = false) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
-            
+
             // Формируем понятные сообщения об ошибках
             let errorMessage = errorData.message || errorData.error || `API Error: ${response.status}`
-            
+
             if (response.status === 401) {
                 if (endpoint.includes('/login')) {
                     errorMessage = 'Неверный email или пароль'
                 } else if (endpoint.includes('/register')) {
                     errorMessage = 'Пользователь с таким email уже существует'
+                } else if (endpoint.includes('/refresh')) {
+                    // Refresh token истёк или невалиден - очищаем и открываем логин
+                    errorMessage = 'Сессия истекла, выполните вход заново'
+                    localStorage.removeItem(ACCESS_TOKEN_KEY)
+                    localStorage.removeItem(REFRESH_TOKEN_KEY)
+                    localStorage.removeItem('auth_user')
+                    if (onAuthExpiredCallback) {
+                        onAuthExpiredCallback()
+                    }
                 } else {
                     errorMessage = 'Необходима авторизация'
                 }
@@ -77,7 +97,7 @@ export async function fetchApi(endpoint, options = {}, requiresAuth = false) {
             } else if (response.status === 500) {
                 errorMessage = 'Ошибка сервера. Попробуйте позже'
             }
-            
+
             throw new Error(errorMessage)
         }
 

@@ -160,12 +160,14 @@ export async function refreshAuthTokens(token) {
 
 /**
  * Обновить токен если он истёк
+ * @param {Function} onAuthExpired - Callback для открытия окна логина
  * @returns {Promise<string|null>} Новый access token или null
  */
-export async function ensureValidToken() {
+export async function ensureValidToken(onAuthExpired) {
     const refreshToken = getRefreshToken();
 
     if (!refreshToken) {
+        if (onAuthExpired) onAuthExpired();
         return null;
     }
 
@@ -175,6 +177,7 @@ export async function ensureValidToken() {
     } catch (error) {
         console.error('[Auth API] Token refresh failed:', error);
         clearAuthData();
+        if (onAuthExpired) onAuthExpired();
         return null;
     }
 }

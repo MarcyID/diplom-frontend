@@ -45,6 +45,13 @@ export default function AddToCollectionModal({ isOpen, onClose, movie, collectio
         }
     }
 
+    // Вычисляем новые подборки (без фильма) для отображения в кнопке
+    const filmCollectionIds = collections
+        .filter(col => col.movieIds?.includes(movieId))
+        .map(col => col.id)
+    const newCollectionIds = selectedIds.filter(id => !filmCollectionIds.includes(id))
+    const canAdd = newCollectionIds.length > 0
+
     const handleCreate = async () => {
         if (newTitle.trim() && movie) {
             try {
@@ -165,9 +172,9 @@ export default function AddToCollectionModal({ isOpen, onClose, movie, collectio
                                     <button
                                         className="btn-add"
                                         onClick={handleAdd}
-                                        disabled={selectedIds.length === 0}
+                                        disabled={!canAdd}
                                     >
-                                        <Check size={18} /> Добавить в {selectedIds.length} {selectedIds.length === 1 ? 'подборку' : selectedIds.length < 5 ? 'подборки' : 'подборок'}
+                                        <Check size={18} /> {canAdd ? `Добавить в ${newCollectionIds.length} ${newCollectionIds.length === 1 ? 'подборку' : newCollectionIds.length < 5 ? 'подборки' : 'подборок'}` : 'Уже во всех выбранных'}
                                     </button>
                                 </div>
                             )}

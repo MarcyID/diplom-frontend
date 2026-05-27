@@ -91,7 +91,7 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navi
                             title: col.title,
                             description: col.description || '',
                             is_public: col.is_public,
-                            movieIds: collectionDetail?.films?.map(f => f.film_id) || [],
+                            movieIds: collectionDetail?.films?.map(f => f.kinopoiskId) || [],
                             films: collectionDetail?.films?.length || col.films_count || 0,
                             created_at: col.created_at,
                             updated_at: col.updated_at

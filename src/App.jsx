@@ -15,6 +15,7 @@ import ActorCardModal from './components/ActorCardModal'
 import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
 import { isAuthenticated, getUser, getMe, clearAuthData, ensureValidToken } from './services/auth'
+import { setAuthExpiredCallback } from './services/api-core'
 import { getProfile, updateProfile } from './services/profile'
 import { getMyCollections, createCollection, updateCollection as apiUpdateCollection, deleteCollection as apiDeleteCollection, addFilmToCollection, removeFilmFromCollection, getCollection } from './services/collections'
 import { getFavorites, toggleFilm, togglePerson } from './services/favorites'
@@ -88,7 +89,7 @@ function App() {
                 if (savedUser) {
                     // Пользователь был сохранён, но токена нет - возможно истёк
                     // Пробуем обновить токен
-                    const newToken = await ensureValidToken()
+                    const newToken = await ensureValidToken(() => setIsAuthModalOpen(true))
                     if (newToken) {
                         setIsLoggedIn(true)
                         // Загружаем актуальные данные профиля
@@ -209,7 +210,7 @@ function App() {
                                 title: col.title,
                                 description: col.description || '',
                                 is_public: col.is_public,
-                                movieIds: collectionDetail?.films?.map(f => f.film_id) || [],
+                                movieIds: collectionDetail?.films?.map(f => f.kinopoiskId) || [],
                                 films: collectionDetail?.films?.length || col.films_count || 0,
                                 created_at: col.created_at,
                                 updated_at: col.updated_at
@@ -232,7 +233,7 @@ function App() {
                 // Если ошибка 401 или "Необходима авторизация", пробуем обновить токен
                 const isAuthError = error.message?.includes('401') || error.message?.includes('Необходима авторизация')
                 if (isAuthError) {
-                    const newToken = await ensureValidToken()
+                    const newToken = await ensureValidToken(() => setIsAuthModalOpen(true))
                     if (newToken) {
                         // Токен обновлён, пробуем ещё раз получить пользователя
                         try {
@@ -685,6 +686,11 @@ function AppContent({
     const [isDirectorOpen, setIsDirectorOpen] = useState(false)
     const [isUpcomingOpen, setIsUpcomingOpen] = useState(false)
     const [pendingCollectionCreate, setPendingCollectionCreate] = useState(false)
+
+    // Устанавливаем глобальный callback для обработки 401 ошибки
+    useEffect(() => {
+        setAuthExpiredCallback(() => setIsAuthModalOpen(true))
+    }, [])
 
     // 🎪 Открыть фич-модалку по типу
     const handleOpenFeatureModal = (type) => {
