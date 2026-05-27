@@ -1,23 +1,45 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Share2, X, Film, Pencil, Check, Trash2 } from 'lucide-react'
 
 export default function SingleCollectionModal({
-                                                  isOpen, onClose, collection,
-                                                  onUpdate, onDelete, startInEditMode
+                                                  isOpen, onClose, collection, userCollections,
+                                                  onUpdate, onDelete, startInEditMode,
+                                                  onRemoveFilm, onMovieClick, onStartInEditModeApplied
                                               }) {
     const [isEditing, setIsEditing] = useState(false)
     const [editTitle, setEditTitle] = useState(collection?.title || '')
     const [editDescription, setEditDescription] = useState(collection?.description || '')
+    const shareBtnRef = useRef(null)
+
+    // Определяем градиент по индексу коллекции
+    const collectionIndex = collection ? userCollections.findIndex(c => c.id === collection.id) : 0
+    const gradientClass = `gradient-${(collectionIndex % 5) + 1}`
 
     // Сброс формы при открытии новой подборки
     useEffect(() => {
         if (collection) {
             setEditTitle(collection.title)
             setEditDescription(collection.description || '')
-            setIsEditing(!!startInEditMode)
+            // Включаем режим редактирования только если явно запрошено
+            if (startInEditMode) {
+                setIsEditing(true)
+            }
         }
-    }, [collection?.id, startInEditMode])
+    }, [collection?.id]) // Убрали startInEditMode из зависимостей
+
+    // Сбрасываем флаг startInEditMode после применения
+    useEffect(() => {
+        if (startInEditMode && isEditing) {
+            const timer = setTimeout(() => {
+                // Сообщаем родителю, что флаг был применён
+                if (onStartInEditModeApplied) {
+                    onStartInEditModeApplied()
+                }
+            }, 50)
+            return () => clearTimeout(timer)
+        }
+    }, [startInEditMode, isEditing, onStartInEditModeApplied])
 
     if (!collection) return null
 
@@ -33,13 +55,17 @@ export default function SingleCollectionModal({
     }
 
     const removeFilm = (movieId) => {
-        const newMovieIds = movieIds.filter(id => id !== movieId)
-        onUpdate(collection.id, { movieIds: newMovieIds })
+        // Для удаления фильма используем отдельный API endpoint
+        // onUpdate здесь не подходит, т.к. API не поддерживает обновление movieIds
+        // Эта функция должна вызываться из ProfilePage с правильным API вызовом
+        if (onRemoveFilm) {
+            onRemoveFilm(collection.id, movieId)
+        }
     }
 
     return (
         <AnimatePresence>
-            {isOpen && (
+            {isOpen && collection && (
                 <>
                     <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
                     <div className="modal-container">
@@ -52,7 +78,7 @@ export default function SingleCollectionModal({
                         >
                             <button className="modal-close" onClick={onClose}><X size={20} /></button>
 
-                            <div className="collection-modal-header" style={{ background: collection.gradient }}>
+                            <div className={`collection-modal-header ${gradientClass}`}>
                                 <div className="header-overlay"></div>
                                 <div className="header-content">
                                     {isEditing ? (
@@ -63,33 +89,16 @@ export default function SingleCollectionModal({
 
                                     {isEditing ? (
                                         <textarea className="edit-description-input" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Описание подборки" />
+                                    ) : collection.description ? (
+                                        <p className="collection-description">{collection.description}</p>
                                     ) : (
-                                        <p className="collection-description">{collection.description || 'Без описания'}</p>
+                                        <div className="collection-description-placeholder" />
                                     )}
 
                                     <div className="collection-stats">
                                         <span><Film size={14} /> {movieIds.length} фильмов</span>
                                         <span>Создана {new Date(collection.createdDate || Date.now()).toLocaleDateString('ru-RU')}</span>
                                     </div>
-                                    <button
-                                        className="share-collection-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const shareUrl = `${window.location.origin}/profile?collection=${collection.id}`;
-                                            navigator.clipboard.writeText(shareUrl).then(() => {
-                                                const btn = e.currentTarget;
-                                                const originalText = btn.innerHTML;
-                                                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Скопировано!';
-                                                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                                                setTimeout(() => {
-                                                    btn.innerHTML = originalText;
-                                                    btn.style.background = '';
-                                                }, 2000);
-                                            });
-                                        }}
-                                    >
-                                        <Share2 size={16} /> Поделиться
-                                    </button>
                                 </div>
                             </div>
 
@@ -101,8 +110,36 @@ export default function SingleCollectionModal({
                                     </>
                                 ) : (
                                     <>
-                                        <button className="action-btn-edit" onClick={() => setIsEditing(true)}><Pencil size={14} /> Редактировать</button>
-                                        <button className="action-btn-delete" onClick={() => onDelete(collection.id)}><Trash2 size={14} /> Удалить подборку</button>
+                                        <div className="collection-actions-group">
+                                            <button className="action-btn-edit" onClick={() => setIsEditing(true)}><Pencil size={14} /> Редактировать</button>
+                                            <button className="action-btn-delete" onClick={() => onDelete(collection.id)}><Trash2 size={14} /> Удалить подборку</button>
+                                        </div>
+                                        <button
+                                            ref={shareBtnRef}
+                                            className="share-collection-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const shareUrl = `${window.location.origin}/profile?collection=${collection.id}`;
+                                                navigator.clipboard.writeText(shareUrl).then(() => {
+                                                    if (!shareBtnRef.current) return;
+                                                    const originalContent = shareBtnRef.current.innerHTML;
+                                                    shareBtnRef.current.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Скопировано!';
+                                                    shareBtnRef.current.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                                                    setTimeout(() => {
+                                                        if (shareBtnRef.current) {
+                                                            shareBtnRef.current.innerHTML = originalContent;
+                                                            shareBtnRef.current.style.background = '';
+                                                        }
+                                                    }, 2000);
+                                                }).catch((err) => {
+                                                    console.error('[Share] Failed to copy:', err);
+                                                    // Фоллбэк: просто показываем уведомление
+                                                    alert('Ссылка скопирована: ' + shareUrl);
+                                                });
+                                            }}
+                                        >
+                                            <Share2 size={16} /> Поделиться
+                                        </button>
                                     </>
                                 )}
                             </div>

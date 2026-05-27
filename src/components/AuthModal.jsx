@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, User, Eye, EyeOff, ChevronRight, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { login, register } from '../services/auth'
+import { getMyCollections } from '../services/collections'
 
 // Импорты иконок
 import googleIcon from '../assets/icons/google.svg'
@@ -10,7 +11,7 @@ import vkIcon from '../assets/icons/vk.svg'
 import yandexIcon from '../assets/icons/yandex.svg'
 
 // Принимаем setUser, чтобы сохранять имя
-function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navigateTo }) {
+function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navigateTo, setCollectionsLoading }) {
     const [isLogin, setIsLogin] = useState(true)
     const [showPassword, setShowPassword] = useState(false)
 
@@ -49,23 +50,18 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navi
             let response
             if (isLogin) {
                 // Вход
-                console.log('[AuthModal] Logging in with:', email)
                 response = await login({ email, password })
-                console.log('[AuthModal] Login response:', response)
             } else {
                 // Регистрация
-                console.log('[AuthModal] Registering with:', email, name)
                 response = await register({
                     email,
                     username: name,
                     password,
                     full_name: name || undefined
                 })
-                console.log('[AuthModal] Register response:', response)
             }
 
             if (response?.user) {
-                console.log('[AuthModal] Auth successful, user:', response.user)
                 // Успешная авторизация
                 setIsLoggedIn(true)
                 setUser(prev => ({
@@ -73,8 +69,37 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navi
                     id: response.user.id,
                     email: response.user.email,
                     username: response.user.username,
-                    name: response.user.full_name || name
+                    name: response.user.full_name || name,
+                    avatar: response.user.avatar_url,
+                    banner: response.user.banner_url,
+                    createdAt: response.user.created_at
                 }))
+
+                // Загружаем подборки пользователя
+                if (setCollectionsLoading) {
+                    setCollectionsLoading(true)
+                }
+                try {
+                    const collectionsData = await getMyCollections(1, 100)
+                    const items = collectionsData.items || []
+                    const collections = items.map(col => ({
+                        id: col.id,
+                        title: col.title,
+                        description: col.description || '',
+                        is_public: col.is_public,
+                        movieIds: [],
+                        films: col.films_count || 0,
+                        created_at: col.created_at,
+                        updated_at: col.updated_at
+                    }))
+                    setUser(prev => ({ ...prev, collections }))
+                } catch (err) {
+                    console.error('[AuthModal] Failed to load collections:', err)
+                } finally {
+                    if (setCollectionsLoading) {
+                        setCollectionsLoading(false)
+                    }
+                }
 
                 // Закрываем модалку
                 onClose()

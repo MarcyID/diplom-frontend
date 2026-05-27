@@ -1,20 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Check, Film, Sparkles } from 'lucide-react'
+import { X, Plus, Check, Sparkles } from 'lucide-react'
 
-export default function AddToCollectionModal({ isOpen, onClose, movie, collections, onAddToCollection, onCreateCollection }) {
+export default function AddToCollectionModal({ isOpen, onClose, movie, collections = [], onAddToCollection, onCreateCollection }) {
     const [selectedIds, setSelectedIds] = useState([])
     const [isCreating, setIsCreating] = useState(false)
     const [newTitle, setNewTitle] = useState('')
     const [newDescription, setNewDescription] = useState('')
 
+    // Определяем ID фильма
+    const movieId = movie?.kinopoiskId || movie?.id
+
     // Сброс при открытии
-    const handleOpen = () => {
-        setSelectedIds([])
-        setIsCreating(false)
-        setNewTitle('')
-        setNewDescription('')
-    }
+    useEffect(() => {
+        if (isOpen && collections.length > 0 && movieId) {
+            // Предвыбираем подборки, где фильм уже есть
+            const filmCollectionIds = collections
+                .filter(col => col.movieIds?.includes(movieId))
+                .map(col => col.id)
+            setSelectedIds(filmCollectionIds)
+            setIsCreating(false)
+            setNewTitle('')
+            setNewDescription('')
+        }
+    }, [isOpen, collections, movieId])
 
     const toggleCollection = (id) => {
         setSelectedIds(prev =>
@@ -24,22 +33,32 @@ export default function AddToCollectionModal({ isOpen, onClose, movie, collectio
 
     const handleAdd = () => {
         if (selectedIds.length > 0 && movie) {
-            onAddToCollection(selectedIds, movie.id)
+            // Добавляем только в те подборки, где фильма ещё нет
+            const filmCollectionIds = collections
+                .filter(col => col.movieIds?.includes(movieId))
+                .map(col => col.id)
+            const newCollectionIds = selectedIds.filter(id => !filmCollectionIds.includes(id))
+            if (newCollectionIds.length > 0) {
+                onAddToCollection(newCollectionIds, movie.kinopoiskId)
+            }
             onClose()
         }
     }
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (newTitle.trim() && movie) {
-            const newCol = onCreateCollection({
-                title: newTitle.trim(),
-                description: newDescription.trim(),
-                movieIds: [movie.id],
-                gradient: `linear-gradient(135deg, hsl(${Math.random() * 360}, 70%, 50%), hsl(${Math.random() * 360}, 70%, 40%))`
-            })
-            if (newCol) {
-                setSelectedIds([newCol.id])
-                setIsCreating(false)
+            try {
+                await onCreateCollection({
+                    title: newTitle.trim(),
+                    description: newDescription.trim(),
+                    // Создаём подборку с фильмом, используя kinopoiskId
+                    filmIds: [movie.kinopoiskId],
+                    gradient: `linear-gradient(135deg, hsl(${Math.random() * 360}, 70%, 50%), hsl(${Math.random() * 360}, 70%, 40%))`
+                })
+                // Подборка создана с фильмом внутри - закрываем модалку
+                onClose()
+            } catch (error) {
+                console.error('Failed to create collection:', error)
             }
         }
     }
@@ -48,7 +67,7 @@ export default function AddToCollectionModal({ isOpen, onClose, movie, collectio
         <AnimatePresence>
             {isOpen && (
                 <>
-                    <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} onOpen={handleOpen} />
+                    <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
                     <div className="modal-container">
                         <motion.div
                             className="add-to-collection-modal"
@@ -62,7 +81,7 @@ export default function AddToCollectionModal({ isOpen, onClose, movie, collectio
                                 <h2>Добавить в подборку</h2>
                                 {movie && (
                                     <p className="modal-movie-title">
-                                        <Film size={16} /> {movie.title}
+                                        {movie.title}
                                     </p>
                                 )}
                             </div>
@@ -98,32 +117,36 @@ export default function AddToCollectionModal({ isOpen, onClose, movie, collectio
                                     </div>
                                 </div>
                             ) : (
-                                /* Список существующих подборок */
+                                // Список существующих подборок
                                 <div className="collections-list">
                                     {collections.length > 0 ? (
-                                        collections.map(col => (
-                                            <label key={col.id} className="collection-item">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedIds.includes(col.id)}
-                                                    onChange={() => toggleCollection(col.id)}
-                                                    className="collection-checkbox"
-                                                />
-                                                <div className="collection-preview" style={{ background: col.gradient }}>
-                                                    <div className="collection-preview-overlay"></div>
-                                                    <Film size={20} opacity={0.5} />
-                                                </div>
-                                                <div className="collection-details">
-                                                    <span className="collection-name">{col.title}</span>
-                                                    <span className="collection-count">{col.films || 0} фильмов</span>
-                                                </div>
-                                                {selectedIds.includes(col.id) && (
-                                                    <div className="collection-check">
-                                                        <Check size={18} />
+                                        collections.map(col => {
+                                            const hasFilm = col.movieIds?.includes(movieId)
+                                            const isChecked = selectedIds.includes(col.id)
+                                            return (
+                                                <label key={col.id} className={`collection-item ${hasFilm ? 'has-film' : ''}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={() => !hasFilm && toggleCollection(col.id)}
+                                                        className="collection-checkbox"
+                                                        disabled={hasFilm}
+                                                    />
+                                                    <div className="collection-details">
+                                                        <span className="collection-name">{col.title}</span>
+                                                        {col.description && (
+                                                            <span className="collection-description">{col.description}</span>
+                                                        )}
+                                                        <span className="collection-count">{col.films || 0} фильмов</span>
                                                     </div>
-                                                )}
-                                            </label>
-                                        ))
+                                                    {isChecked && (
+                                                        <div className="collection-check">
+                                                            <Check size={18} />
+                                                        </div>
+                                                    )}
+                                                </label>
+                                            )
+                                        })
                                     ) : (
                                         <p className="no-collections">У вас пока нет подборок</p>
                                     )}
@@ -144,7 +167,7 @@ export default function AddToCollectionModal({ isOpen, onClose, movie, collectio
                                         onClick={handleAdd}
                                         disabled={selectedIds.length === 0}
                                     >
-                                        <Check size={18} /> Добавить в {selectedIds.length} {selectedIds.length === 1 ? 'подборку' : 'подборки'}
+                                        <Check size={18} /> Добавить в {selectedIds.length} {selectedIds.length === 1 ? 'подборку' : selectedIds.length < 5 ? 'подборки' : 'подборок'}
                                     </button>
                                 </div>
                             )}

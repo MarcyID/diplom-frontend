@@ -38,7 +38,7 @@ export default function FavoritesViewerModal({
         setAuthError(false)
         setLoading(true)
         try {
-            const data = await getFavorites(1, 100)
+            const data = await getFavorites(1, 20)
             setFavoritesData(data.items || [])
         } catch (error) {
             console.error('Failed to load favorites:', error)

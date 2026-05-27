@@ -5,19 +5,28 @@
 
 import { fetchApi } from './api-core.js'
 
+const API_BASE_URL = 'http://localhost:5454'
+
 /**
  * Получить все подборки текущего пользователя
- * @param {number} page - Номер страницы
- * @param {number} pageSize - Размер страницы
+ * @param {number} page - Номер страницы (начиная с 1)
+ * @param {number} pageSize - Количество элементов на странице
  * @returns {Promise<{items: Array, total: number, page: number}>}
  */
 export async function getMyCollections(page = 1, pageSize = 20) {
-    const response = await fetchApi(`/api/v1/collections/my?page=${page}&page_size=${pageSize}`, {}, true)
-    return {
-        items: response?.items || [],
-        total: response?.total || 0,
-        page: response?.page || 1
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections/my?page=${page}&page_size=${pageSize}`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось загрузить подборки')
     }
+
+    const data = await response.json()
+    return data.data || { items: [], total: 0, page }
 }
 
 /**
@@ -29,15 +38,26 @@ export async function getMyCollections(page = 1, pageSize = 20) {
  * @returns {Promise<Object>} Созданная подборка
  */
 export async function createCollection(collectionData) {
-    const response = await fetchApi('/api/v1/collections', {
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections`, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
         body: JSON.stringify({
             title: collectionData.title,
-            description: collectionData.description || '',
+            description: collectionData.description || null,
             is_public: collectionData.is_public !== false
         }),
-    }, true)
-    return response?.collection || null
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось создать подборку')
+    }
+
+    const data = await response.json()
+    return data.data?.collection || null
 }
 
 /**
@@ -46,8 +66,19 @@ export async function createCollection(collectionData) {
  * @returns {Promise<Object>} Подборка с фильмами
  */
 export async function getCollection(collectionId) {
-    const response = await fetchApi(`/api/v1/collections/${collectionId}`, {}, false)
-    return response?.collection || null
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections/${collectionId}`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось загрузить подборку')
+    }
+
+    const data = await response.json()
+    return data.data?.collection || null
 }
 
 /**
@@ -60,11 +91,22 @@ export async function getCollection(collectionId) {
  * @returns {Promise<Object>} Обновлённая подборка
  */
 export async function updateCollection(collectionId, updates) {
-    const response = await fetchApi(`/api/v1/collections/${collectionId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections/${collectionId}`, {
         method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
         body: JSON.stringify(updates),
-    }, true)
-    return response?.collection || null
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось обновить подборку')
+    }
+
+    const data = await response.json()
+    return data.data?.collection || null
 }
 
 /**
@@ -73,26 +115,41 @@ export async function updateCollection(collectionId, updates) {
  * @returns {Promise<void>}
  */
 export async function deleteCollection(collectionId) {
-    await fetchApi(`/api/v1/collections/${collectionId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections/${collectionId}`, {
         method: 'DELETE',
-    }, true)
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось удалить подборку')
+    }
 }
 
 /**
  * Добавить фильм в подборку
  * @param {number|string} collectionId - ID подборки
- * @param {number|string} filmId - ID фильма
- * @param {number} [position] - Позиция фильма
+ * @param {number|string} filmId - ID фильма (kinopoiskId)
  * @returns {Promise<void>}
  */
-export async function addFilmToCollection(collectionId, filmId, position) {
-    await fetchApi(`/api/v1/collections/${collectionId}/films`, {
+export async function addFilmToCollection(collectionId, filmId) {
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections/${collectionId}/films`, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
         body: JSON.stringify({
-            film_id: filmId,
-            position: position || 0
+            film_id: filmId
         }),
-    }, true)
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось добавить фильм в подборку')
+    }
 }
 
 /**
@@ -102,9 +159,17 @@ export async function addFilmToCollection(collectionId, filmId, position) {
  * @returns {Promise<void>}
  */
 export async function removeFilmFromCollection(collectionId, filmId) {
-    await fetchApi(`/api/v1/collections/${collectionId}/films/${filmId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections/${collectionId}/films/${filmId}`, {
         method: 'DELETE',
-    }, true)
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось удалить фильм из подборки')
+    }
 }
 
 /**
@@ -114,26 +179,42 @@ export async function removeFilmFromCollection(collectionId, filmId) {
  * @returns {Promise<void>}
  */
 export async function reorderCollectionFilms(collectionId, filmPositions) {
-    await fetchApi(`/api/v1/collections/${collectionId}/films/reorder`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/collections/${collectionId}/films/reorder`, {
         method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
         body: JSON.stringify({
             film_positions: filmPositions
         }),
-    }, true)
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось изменить порядок фильмов')
+    }
 }
 
 /**
  * Получить публичные подборки пользователя
  * @param {number|string} userId - ID пользователя
- * @param {number} page - Номер страницы
- * @param {number} pageSize - Размер страницы
+ * @param {number} page - Номер страницы (начиная с 1)
+ * @param {number} pageSize - Количество элементов на странице
  * @returns {Promise<{items: Array, total: number, page: number}>}
  */
 export async function getUserCollections(userId, page = 1, pageSize = 20) {
-    const response = await fetchApi(`/api/v1/users/${userId}/collections?page=${page}&page_size=${pageSize}`, {}, false)
-    return {
-        items: response?.items || [],
-        total: response?.total || 0,
-        page: response?.page || 1
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}/collections?page=${page}&page_size=${pageSize}`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Не удалось загрузить подборки пользователя')
     }
+
+    const data = await response.json()
+    return data.data || { items: [], total: 0, page }
 }

@@ -26,24 +26,27 @@ export default function CollectionsViewerModal({ isOpen, onClose, collections })
 
                             {collections.length > 0 ? (
                                 <div className="viewer-collections-list">
-                                    {collections.map((collection, index) => (
-                                        <motion.div
-                                            key={collection.id}
-                                            className="collection-summary-item"
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.03 }}
-                                        >
-                                            <div className="collection-preview" style={{ background: collection.gradient }}>
-                                                <Film size={32} opacity={0.4} />
-                                            </div>
-                                            <div className="collection-info">
-                                                <h3>{collection.title}</h3>
-                                                <p className="collection-desc">{collection.description || 'Без описания'}</p>
-                                                <span className="collection-films">{collection.films || collection.movieIds?.length || 0} фильмов</span>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                    {collections.map((collection, index) => {
+                                        const gradientClass = `gradient-${(index % 5) + 1}`
+                                        return (
+                                            <motion.div
+                                                key={collection.id}
+                                                className={`collection-summary-item ${gradientClass}`}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.03 }}
+                                            >
+                                                <div className="collection-preview">
+                                                    <Film size={32} opacity={0.4} />
+                                                </div>
+                                                <div className="collection-info">
+                                                    <h3>{collection.title}</h3>
+                                                    {collection.description && <p className="collection-desc">{collection.description}</p>}
+                                                    <span className="collection-films">{collection.films || collection.movieIds?.length || 0} фильмов</span>
+                                                </div>
+                                            </motion.div>
+                                        )
+                                    })}
                                 </div>
                             ) : (
                                 <div className="viewer-empty">

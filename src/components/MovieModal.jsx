@@ -168,11 +168,9 @@ function MovieModal({
                                             Смотреть на Кинопоиске
                                         </button>
 
-                                        {userCollections && userCollections.length > 0 && (
-                                            <button className="btn-add" onClick={() => setIsAddModalOpen(true)}>
-                                                Добавить в подборку
-                                            </button>
-                                        )}
+                                        <button className="btn-add" onClick={() => setIsAddModalOpen(true)}>
+                                            Добавить в подборку
+                                        </button>
                                     </div>
 
                                     {/* 🔥 КНОПКА "В ИЗБРАННОЕ" */}
@@ -252,9 +250,8 @@ function MovieModal({
                     <AddToCollectionModal
                         isOpen={isAddModalOpen}
                         onClose={() => setIsAddModalOpen(false)}
-                        filmId={film.kinopoiskId}
-                        filmTitle={getTitle(film)}
-                        userCollections={userCollections}
+                        movie={film}
+                        collections={userCollections}
                         onAddToCollection={onAddToCollection}
                         onCreateCollection={onCreateCollection}
                     />

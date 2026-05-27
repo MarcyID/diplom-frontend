@@ -16,7 +16,7 @@ import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
 import { isAuthenticated, getUser, getMe, clearAuthData, ensureValidToken } from './services/auth'
 import { getProfile, updateProfile } from './services/profile'
-import { getMyCollections, createCollection, updateCollection as apiUpdateCollection, deleteCollection as apiDeleteCollection } from './services/collections'
+import { getMyCollections, createCollection, updateCollection as apiUpdateCollection, deleteCollection as apiDeleteCollection, addFilmToCollection, removeFilmFromCollection } from './services/collections'
 import { getFavorites, toggleFilm, togglePerson } from './services/favorites'
 
 // Ключ для localStorage избранного
@@ -49,19 +49,17 @@ function App() {
 
     // 👤 Профиль пользователя
     const [user, setUser] = useState({
-        name: 'Гость',
+        name: '',
         avatar: null,
         banner: null,
-        genres: ['Драма', 'Фантастика'],
+        genres: [],
         favoriteMovies: [],
         favoriteActors: [],
         favoriteDirectors: [],
-        favorites: [1, 3, 6],
-        collections: [
-            { id: 1, title: 'Вечерний релакс', description: 'Фильмы для спокойного вечера', films: 2, movieIds: [1, 4], gradient: 'linear-gradient(135deg, #667eea, #764ba2)' },
-            { id: 2, title: 'Нолан-марафон', description: 'Всё от Кристофера Нолана', films: 3, movieIds: [1, 2, 3], gradient: 'linear-gradient(135deg, #f093fb, #f5576c)' }
-        ]
+        favorites: [],
+        collections: []
     })
+    const [collectionsLoading, setCollectionsLoading] = useState(isAuthenticated() !== null)
 
     // 🔐 Проверка авторизации при загрузке
     useEffect(() => {
@@ -99,8 +97,32 @@ function App() {
                             if (profileData) {
                                 setUser(prev => ({
                                     ...prev,
-                                    ...profileData
+                                    ...profileData,
+                                    avatar: profileData.avatar_url,
+                                    banner: profileData.banner_url
                                 }))
+                            }
+
+                            // Загружаем подборки
+                            setCollectionsLoading(true)
+                            try {
+                                const collectionsData = await getMyCollections(1, 100)
+                                const items = collectionsData.items || []
+                                const collections = items.map(col => ({
+                                    id: col.id,
+                                    title: col.title,
+                                    description: col.description || '',
+                                    is_public: col.is_public,
+                                    movieIds: [],
+                                    films: col.films_count || 0,
+                                    created_at: col.created_at,
+                                    updated_at: col.updated_at
+                                }))
+                                setUser(prev => ({ ...prev, collections }))
+                            } catch (err) {
+                                console.error('[Auth] Failed to load collections:', err)
+                            } finally {
+                                setCollectionsLoading(false)
                             }
                         } catch (err) {
                             console.error('[Auth] Failed to load profile:', err)
@@ -108,6 +130,8 @@ function App() {
                         return
                     }
                 }
+                // Если нет сохранённого пользователя или токен не обновился - сбрасываем loading
+                setCollectionsLoading(false)
                 return
             }
 
@@ -116,24 +140,29 @@ function App() {
                 const userData = await getMe()
                 if (userData) {
                     setIsLoggedIn(true)
+                    // Начинаем загрузку подборок
+                    setCollectionsLoading(true)
                     setUser(prev => ({
                         ...prev,
                         id: userData.id,
                         name: userData.full_name || userData.username,
                         email: userData.email,
                         username: userData.username,
-                        createdAt: userData.created_at
+                        createdAt: userData.created_at,
+                        avatar: userData.avatar_url,
+                        banner: userData.banner_url
                     }))
-                    
-                    // Загружаем избранное с бэкенда
+
+                    // Загружаем избранное с бэкенда (ВРЕМЕННО ОТКЛЮЧЕНО - бэкенд не отвечает)
+                    /*
                     try {
-                        const favoritesData = await getFavorites(1, 100)
+                        const favoritesData = await getFavorites(1, 20)
                         const items = favoritesData.items || []
-                        
+
                         // Разделяем на фильмы и персоны
                         const favoriteMovies = []
                         const favoritePeople = []
-                        
+
                         items.forEach(item => {
                             if (item.object_type === 'film') {
                                 // Бэкенд возвращает object_id и film_data.kinopoiskId
@@ -148,14 +177,14 @@ function App() {
                                 }
                             }
                         })
-                        
+
                         setUser(prev => ({
                             ...prev,
                             favoriteMovies,
                             favoriteActors: favoritePeople,
                             favoriteDirectors: []
                         }))
-                        
+
                         // Сохраняем в localStorage для быстрого доступа
                         localStorage.setItem(FAVORITES_KEY, JSON.stringify({
                             favoriteMovies,
@@ -165,6 +194,36 @@ function App() {
                     } catch (favError) {
                         console.error('[Auth] Failed to load favorites:', favError)
                     }
+                    */
+
+                    // Загружаем подборки с бэкенда
+                    try {
+                        const collectionsData = await getMyCollections(1, 100)
+                        const items = collectionsData.items || []
+
+                        // Преобразуем в формат фронтенда
+                        const collections = items.map(col => ({
+                            id: col.id,
+                            title: col.title,
+                            description: col.description || '',
+                            is_public: col.is_public,
+                            movieIds: [], // Заполним при загрузке детальной информации
+                            films: col.films_count || 0,
+                            created_at: col.created_at,
+                            updated_at: col.updated_at
+                        }))
+
+                        setUser(prev => ({
+                            ...prev,
+                            collections
+                        }))
+                    } catch (colError) {
+                        console.error('[Auth] Failed to load collections:', colError)
+                    } finally {
+                        setCollectionsLoading(false)
+                    }
+                } else {
+                    setCollectionsLoading(false)
                 }
             } catch (error) {
                 // Если ошибка 401 или "Необходима авторизация", пробуем обновить токен
@@ -182,19 +241,51 @@ function App() {
                                     id: userData.id,
                                     name: userData.full_name || userData.username,
                                     email: userData.email,
-                                    username: userData.username
+                                    username: userData.username,
+                                    avatar: userData.avatar_url,
+                                    banner: userData.banner_url,
+                                    createdAt: userData.created_at
                                 }))
+
+                                // Загружаем подборки
+                                setCollectionsLoading(true)
+                                try {
+                                    const collectionsData = await getMyCollections(100, 0)
+                                    const items = collectionsData.collections || []
+                                    const collections = items.map(col => ({
+                                        id: col.id,
+                                        title: col.title,
+                                        description: col.description || '',
+                                        is_public: col.is_public,
+                                        movieIds: [],
+                                        films: col.films_count || 0,
+                                        created_at: col.created_at,
+                                        updated_at: col.updated_at
+                                    }))
+                                    setUser(prev => ({ ...prev, collections }))
+                                } catch (err) {
+                                    console.error('[Auth] Failed to load collections:', err)
+                                } finally {
+                                    setCollectionsLoading(false)
+                                }
                             }
                         } catch (retryError) {
                             clearAuthData()
+                            // Открываем окно входа
+                            setIsAuthModalOpen(true)
                         }
                     } else {
                         clearAuthData()
+                        // Открываем окно входа
+                        setIsAuthModalOpen(true)
                     }
                 } else {
                     clearAuthData()
+                    // Открываем окно входа
+                    setIsAuthModalOpen(true)
                 }
                 setIsLoggedIn(false)
+                setCollectionsLoading(false)
             }
         }
         checkAuth()
@@ -390,51 +481,128 @@ function App() {
     }
 
     // ✏️ Обновление подборки
-    const updateCollection = (collectionId, updates) => {
-        setUser(prev => ({
-            ...prev,
-            collections: prev.collections.map(c =>
-                c.id === collectionId ? { ...c, ...updates, films: updates.movieIds?.length || c.films } : c
-            )
-        }))
+    const updateCollection = async (collectionId, updates) => {
+        try {
+            const updated = await apiUpdateCollection(collectionId, updates)
+
+            if (updated) {
+                setUser(prev => ({
+                    ...prev,
+                    collections: prev.collections.map(c =>
+                        c.id === collectionId ? {
+                            ...c,
+                            title: updated.title || c.title,
+                            description: updated.description !== undefined ? updated.description : c.description,
+                            is_public: updated.is_public !== undefined ? updated.is_public : c.is_public,
+                            films: updated.films_count ?? c.films,
+                            updated_at: updated.updated_at
+                        } : c
+                    )
+                }))
+            }
+        } catch (error) {
+            console.error('[App] Failed to update collection:', error)
+            throw error
+        }
     }
 
     // 🗑️ Удаление подборки
-    const deleteCollection = (collectionId) => {
-        setUser(prev => ({
-            ...prev,
-            collections: prev.collections.filter(c => c.id !== collectionId)
-        }))
+    const deleteCollection = async (collectionId) => {
+        try {
+            await apiDeleteCollection(collectionId)
+            setUser(prev => ({
+                ...prev,
+                collections: prev.collections.filter(c => c.id !== collectionId)
+            }))
+        } catch (error) {
+            console.error('[App] Failed to delete collection:', error)
+            throw error
+        }
     }
 
     // ➕ Добавить фильм в подборки
-    const addMovieToCollections = (collectionIds, movieId) => {
-        setUser(prev => ({
-            ...prev,
-            collections: prev.collections.map(c => {
-                if (collectionIds.includes(c.id)) {
-                    const movieIds = c.movieIds || []
-                    if (!movieIds.includes(movieId)) {
-                        return { ...c, movieIds: [...movieIds, movieId], films: (c.films || 0) + 1 }
+    const addMovieToCollections = async (collectionIds, movieId) => {
+        for (const collectionId of collectionIds) {
+            try {
+                await addFilmToCollection(collectionId, movieId)
+                setUser(prev => ({
+                    ...prev,
+                    collections: prev.collections.map(c => {
+                        if (c.id === collectionId) {
+                            const movieIds = c.movieIds || []
+                            if (!movieIds.includes(movieId)) {
+                                return { ...c, movieIds: [...movieIds, movieId], films: (c.films || 0) + 1 }
+                            }
+                        }
+                        return c
+                    })
+                }))
+            } catch (error) {
+                console.error('[App] Failed to add film to collection:', error)
+            }
+        }
+    }
+
+    // ➖ Удалить фильм из подборки
+    const removeMovieFromCollection = async (collectionId, movieId) => {
+        try {
+            await removeFilmFromCollection(collectionId, movieId)
+            setUser(prev => ({
+                ...prev,
+                collections: prev.collections.map(c => {
+                    if (c.id === collectionId) {
+                        const movieIds = c.movieIds || []
+                        return {
+                            ...c,
+                            movieIds: movieIds.filter(id => id !== movieId),
+                            films: Math.max(0, (c.films || 0) - 1)
+                        }
                     }
-                }
-                return c
-            })
-        }))
+                    return c
+                })
+            }))
+        } catch (error) {
+            console.error('[App] Failed to remove film from collection:', error)
+            throw error
+        }
     }
 
     // ✨ Создать новую подборку
-    const createNewCollection = (newColData) => {
-        const newCollection = {
-            id: Date.now(),
-            title: newColData.title,
-            description: newColData.description,
-            gradient: newColData.gradient,
-            movieIds: newColData.movieIds || [],
-            films: newColData.movieIds?.length || 0
+    const createNewCollection = async (newColData) => {
+        try {
+            const newCollection = await createCollection({
+                title: newColData.title,
+                description: newColData.description?.trim() || null,
+                is_public: newColData.is_public !== false
+            })
+
+            if (newCollection) {
+                // Если указаны фильмы для добавления
+                if (newColData.filmIds && newColData.filmIds.length > 0) {
+                    for (const filmId of newColData.filmIds) {
+                        await addFilmToCollection(newCollection.id, filmId)
+                    }
+                }
+
+                // Преобразуем в формат фронтенда
+                const frontendCollection = {
+                    id: newCollection.id,
+                    title: newCollection.title,
+                    description: newCollection.description || '',
+                    is_public: newCollection.is_public,
+                    movieIds: newColData.filmIds || [],
+                    films: newColData.filmIds?.length || 0,
+                    created_at: newCollection.created_at,
+                    updated_at: newCollection.updated_at
+                }
+
+                setUser(prev => ({ ...prev, collections: [...prev.collections, frontendCollection] }))
+                return frontendCollection
+            }
+        } catch (error) {
+            console.error('[App] Failed to create collection:', error)
+            throw error
         }
-        setUser(prev => ({ ...prev, collections: [...prev.collections, newCollection] }))
-        return newCollection
     }
 
     return (
@@ -457,6 +625,7 @@ function App() {
                 updateCollection={updateCollection}
                 deleteCollection={deleteCollection}
                 addMovieToCollections={addMovieToCollections}
+                removeMovieFromCollection={removeMovieFromCollection}
                 createNewCollection={createNewCollection}
                 selectedActorId={selectedActorId}
                 setSelectedActorId={setSelectedActorId}
@@ -465,6 +634,8 @@ function App() {
                 selectedDirectorId={selectedDirectorId}
                 isDirectorCardOpen={isDirectorCardOpen}
                 setIsDirectorCardOpen={setIsDirectorCardOpen}
+                collectionsLoading={collectionsLoading}
+                setCollectionsLoading={setCollectionsLoading}
             />
         </Router>
     )
@@ -489,6 +660,7 @@ function AppContent({
     updateCollection,
     deleteCollection,
     addMovieToCollections,
+    removeMovieFromCollection,
     createNewCollection,
     selectedActorId,
     setSelectedActorId,
@@ -496,7 +668,9 @@ function AppContent({
     setIsActorCardOpen,
     selectedDirectorId,
     isDirectorCardOpen,
-    setIsDirectorCardOpen
+    setIsDirectorCardOpen,
+    collectionsLoading,
+    setCollectionsLoading
 }) {
     const navigate = useNavigate()
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -562,8 +736,14 @@ function AppContent({
                             user={user}
                             setUser={setUser}
                             isLoggedIn={isLoggedIn}
+                            collectionsLoading={collectionsLoading}
                             onMovieClick={handleOpenMovieModal}
                             onActorClick={handleOpenActorCard}
+                            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                            onCreateCollection={createNewCollection}
+                            onUpdateCollection={updateCollection}
+                            onDeleteCollection={deleteCollection}
+                            onRemoveMovieFromCollection={removeMovieFromCollection}
                         />
                     } />
                 </Routes>
@@ -582,6 +762,7 @@ function AppContent({
                     onToggleFavorite={toggleFavoriteMovie}
                     userCollections={user.collections}
                     onAddToCollection={addMovieToCollections}
+                    onRemoveFromCollection={removeMovieFromCollection}
                     onCreateCollection={createNewCollection}
                 />
 
@@ -662,6 +843,7 @@ function AppContent({
                     }}
                     setIsLoggedIn={setIsLoggedIn}
                     setUser={setUser}
+                    setCollectionsLoading={setCollectionsLoading}
                     navigateTo={authNavigateTo}
                     onAfterLogin={() => {
                         if (pendingCollectionCreate) {
