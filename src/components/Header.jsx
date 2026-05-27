@@ -1,8 +1,18 @@
 import { Film, User } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import SearchDropdown from './SearchDropdown'
 
-function Header({ onMovieClick, onActorClick, onProfileClick }) {
+function Header({ onMovieClick, onActorClick, onProfileClick, isLoggedIn }) {
+    const navigate = useNavigate()
+
+    const handleProfileClick = () => {
+        if (isLoggedIn) {
+            navigate('/profile')
+        } else {
+            onProfileClick()
+        }
+    }
+
     return (
         <header className="header">
             <div className="header-container">
@@ -17,7 +27,7 @@ function Header({ onMovieClick, onActorClick, onProfileClick }) {
                 />
 
                 <div className="header-actions">
-                    <button onClick={onProfileClick} className="icon-btn">
+                    <button onClick={handleProfileClick} className="icon-btn">
                         <User size={20} />
                     </button>
                 </div>

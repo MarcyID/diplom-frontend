@@ -2,35 +2,94 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     User, Edit3, Plus, Film, Pencil, Trash2,
-    Heart, Bookmark, Clock, Share2, Settings,
-    TrendingUp, Calendar, MapPin, Camera, Image,
+    Heart, Bookmark, Clock, LogIn,
+    Calendar, MapPin, Camera, Image,
     ChevronRight, X, Star, LogOut
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import CreateCollectionModal from './CreateCollectionModal'
 import CollectionsViewerModal from './CollectionsViewerModal'
-import FavoritesViewerModal from './FavoritesViewerModal'
 import SingleCollectionModal from './SingleCollectionModal'
 import { logout } from '../services/auth'
+import { getFavorites, toggleFilm, togglePerson } from '../services/favorites'
+import { isAuthenticated } from '../services/auth'
 
 
 export default function ProfilePage({
                                         user, setUser, isLoggedIn, onMovieClick,
-                                        onActorClick, onDirectorClick
+                                        onActorClick
                                     }) {
     const navigate = useNavigate()
+    const location = useLocation()
     const avatarInputRef = useRef(null)
     const bannerInputRef = useRef(null)
     const [isEditingName, setIsEditingName] = useState(false)
     const [tempName, setTempName] = useState(user.name)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isCollectionsViewerOpen, setIsCollectionsViewerOpen] = useState(false)
-    const [isFavoritesViewerOpen, setIsFavoritesViewerOpen] = useState(false)
     const [selectedCollection, setSelectedCollection] = useState(null)
     const [isSingleCollectionOpen, setIsSingleCollectionOpen] = useState(false)
+    
+    // ❤️ Состояние для вкладок избранного
+    const [activeFavoriteTab, setActiveFavoriteTab] = useState('all') // 'all' | 'movies' | 'people'
+    const [favoritesData, setFavoritesData] = useState([])
+    const [favoritesLoading, setFavoritesLoading] = useState(false)
+    const [favoritesAuthError, setFavoritesAuthError] = useState(false)
+    
+    // ❤️ Загрузка избранного при монтировании
+    useEffect(() => {
+        loadFavorites()
+    }, [isLoggedIn])
+    
+    const loadFavorites = async () => {
+        if (!isAuthenticated()) {
+            setFavoritesAuthError(true)
+            return
+        }
 
-    // 🔥 Вкладка избранного
-    const [favoritesTab, setFavoritesTab] = useState('movies') // 'movies' | 'actors' | 'directors'
+        setFavoritesAuthError(false)
+        setFavoritesLoading(true)
+        try {
+            const data = await getFavorites(1, 100)
+            setFavoritesData(data.items || [])
+        } catch (error) {
+            console.error('Failed to load favorites:', error)
+            if (error.message?.includes('Необходима авторизация') || error.message?.includes('401')) {
+                setFavoritesAuthError(true)
+            }
+        } finally {
+            setFavoritesLoading(false)
+        }
+    }
+    
+    // ❤️ Удаление из избранного
+    const handleRemoveFromFavorites = async (item) => {
+        try {
+            const isFilm = item.object_type === 'film'
+            const id = isFilm ? (item.film_data?.kinopoiskId || item.object_id) : (item.person_data?.kinopoiskId || item.object_id)
+
+            await (isFilm ? toggleFilm(id) : togglePerson(id))
+
+            // Обновляем локальный список
+            setFavoritesData(prev => prev.filter(i =>
+                i.object_id !== item.object_id || i.object_type !== item.object_type
+            ))
+            
+            // Обновляем состояние пользователя
+            if (isFilm) {
+                removeFromFavorites('movie', Number(id))
+            } else {
+                // Проверяем, актёр или режиссёр
+                const data = item.person_data || {}
+                const profession = data.profession || data.professionText || (data.professions?.[0] || '')
+                const isDirector = profession?.toLowerCase().includes('режиссёр')
+                removeFromFavorites(isDirector ? 'director' : 'actor', Number(id))
+            }
+        } catch (error) {
+            console.error('Failed to remove from favorites:', error)
+        }
+    }
+    
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const collectionId = params.get('collection');
@@ -47,7 +106,7 @@ export default function ProfilePage({
         }
     }, [user.collections]);
 
-    const allGenres = ['Драма', 'Фантастика', 'Триллер', 'Комедия', 'Боевик', 'Ужасы', 'Мелодрама', 'Детектив', 'Анимация', 'Документальный']
+    const allGenres = ['Боевик', 'Комедия', 'Драма', 'Фантастика', 'Триллер', 'Ужасы', 'Мелодрама', 'Детектив', 'Фэнтези', 'Приключения', 'Мультфильм', 'Аниме']
 
     // Выход из аккаунта
     const handleLogout = async () => {
@@ -155,10 +214,74 @@ export default function ProfilePage({
 
     const totalFilms = user.collections.reduce((a, c) => a + (c.films || 0), 0)
 
-    // 🔥 Избранные элементы (показываем только количество, т.к. данные из API)
+    // Избранные элементы
     const favoriteMoviesCount = (user.favoriteMovies || []).length
-    const favoriteActorsCount = (user.favoriteActors || []).length
-    const favoriteDirectorsCount = (user.favoriteDirectors || []).length
+    const favoritePeopleCount = (user.favoriteActors?.length || 0) + (user.favoriteDirectors?.length || 0)
+    
+    // Форматируем дату регистрации
+    const formatRegistrationDate = (dateString) => {
+        if (!dateString) return null
+        const date = new Date(dateString)
+        const year = date.getFullYear()
+        return `с ${year} года`
+    }
+    const registrationText = formatRegistrationDate(user.createdAt)
+    
+    // ❤️ Рендер элемента избранного
+    const renderFavoriteItem = (item) => {
+        const isFilm = item.object_type === 'film'
+        const data = isFilm ? item.film_data : (item.person_data || {})
+        const id = isFilm ? (data.kinopoiskId || item.object_id) : (data.personId || item.object_id)
+        const name = isFilm 
+            ? (data.nameRu || data.nameEn || 'Без названия')
+            : (data.nameRu || data.nameEn || data.fullName || data.name || 'Без имени')
+        const posterUrl = data.posterUrlPreview || data.posterUrl || null
+        const profession = data.profession || data.professionText || (data.professions?.[0] || '')
+
+        const handleClick = () => {
+            if (isFilm) {
+                onMovieClick?.({ kinopoiskId: id })
+            } else {
+                onActorClick?.(id)
+            }
+        }
+
+        return (
+            <div key={item.object_id} className="favorite-item-card clickable" onClick={handleClick}>
+                <div className="favorite-item-poster">
+                    {posterUrl ? (
+                        <img src={posterUrl} alt={name} onError={(e) => { e.target.style.display = 'none' }} />
+                    ) : (
+                        <div className="favorite-item-poster-placeholder">
+                            {isFilm ? <Film size={32} /> : <User size={32} />}
+                        </div>
+                    )}
+                </div>
+                <div className="favorite-item-info">
+                    <h4 className="favorite-item-title">{name}</h4>
+                    {isFilm ? (
+                        <p className="favorite-item-meta">
+                            <Film size={14} /> {data.year || '—'} • ⭐ {data.ratingKinopoisk || '—'}
+                        </p>
+                    ) : (
+                        <p className="favorite-item-meta">
+                            <User size={14} /> {profession || 'Персона'}
+                        </p>
+                    )}
+                </div>
+                <button
+                    className="favorite-item-remove-btn"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemoveFromFavorites(item)
+                    }}
+                    title="Удалить из избранного"
+                >
+                    <Trash2 size={18} />
+                </button>
+            </div>
+        )
+    }
 
     return (
         <div className="profile-page">
@@ -201,14 +324,14 @@ export default function ProfilePage({
                                 </h1>
                             )}
                         </div>
-                        <div className="profile-meta">
-                            <span><Calendar size={14} /> Киноман с 2024</span>
-                        </div>
+                        {registrationText && (
+                            <div className="profile-meta">
+                                <span><Calendar size={14} /> Киноман {registrationText}</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="profile-actions">
-                        <button className="action-btn secondary"><Share2 size={16} /> Поделиться</button>
-                        <button className="action-btn primary"><Settings size={16} /> Настройки</button>
                         {isLoggedIn && (
                             <button className="action-btn danger" onClick={handleLogout}>
                                 <LogOut size={16} /> Выйти
@@ -229,7 +352,7 @@ export default function ProfilePage({
                         <div className="stat-value">{user.collections.length}</div>
                         <div className="stat-label">Подборок создано</div>
                     </div>
-                    <div className="stat-card clickable" onClick={() => setIsFavoritesViewerOpen(true)}>
+                    <div className="stat-card">
                         <div className="stat-icon pink"><Heart size={20} /></div>
                         <div className="stat-value">{(user.favoriteMovies?.length || 0) + (user.favoriteActors?.length || 0) + (user.favoriteDirectors?.length || 0)}</div>
                         <div className="stat-label">Всего в избранном</div>
@@ -246,7 +369,7 @@ export default function ProfilePage({
                     <div className="profile-sidebar">
                         {/* Жанровые предпочтения */}
                         <div className="sidebar-card">
-                            <h3 className="sidebar-title"><TrendingUp size={18} /> Жанровые предпочтения</h3>
+                            <h3 className="sidebar-title"><Heart size={18} /> Жанровые предпочтения</h3>
                             <p className="sidebar-hint">Нажмите, чтобы добавить или убрать</p>
                             <div className="genre-cloud">
                                 {allGenres.map(g => (
@@ -258,15 +381,6 @@ export default function ProfilePage({
                                         {g}
                                     </span>
                                 ))}
-                            </div>
-                        </div>
-
-                        {/* Активность */}
-                        <div className="sidebar-card">
-                            <h3 className="sidebar-title"><TrendingUp size={18} /> Активность</h3>
-                            <div className="activity-list">
-                                <div className="activity-item"><span className="activity-dot blue"></span><div><p className="activity-text">Обновлена подборка <b>Вечерний релакс</b></p><span className="activity-time">2 часа назад</span></div></div>
-                                <div className="activity-item"><span className="activity-dot purple"></span><div><p className="activity-text">Добавлен <b>Интерстеллар</b> в избранное</p><span className="activity-time">Вчера</span></div></div>
                             </div>
                         </div>
                     </div>
@@ -296,30 +410,6 @@ export default function ProfilePage({
                                             <div className="collection-footer">
                                                 <span className="film-count"><Film size={14} /> {col.films || 0} фильмов</span>
                                                 <div className="collection-actions" onClick={(e) => e.stopPropagation()}>
-                                                    {/* 🔥 НОВАЯ КНОПКА ПОДЕЛИТЬСЯ */}
-                                                    <button
-                                                        title="Поделиться подборкой"
-                                                        className="action-share-btn"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            navigator.clipboard.writeText(`${window.location.origin}/profile?collection=${col.id}`)
-                                                                .then(() => {
-                                                                    // Визуальная обратная связь
-                                                                    const btn = e.currentTarget;
-                                                                    const original = btn.innerHTML;
-                                                                    btn.innerHTML = '✓';
-                                                                    btn.style.background = 'rgba(16, 185, 129, 0.3)';
-                                                                    btn.style.color = '#10b981';
-                                                                    setTimeout(() => {
-                                                                        btn.innerHTML = original;
-                                                                        btn.style.background = '';
-                                                                        btn.style.color = '';
-                                                                    }, 1500);
-                                                                });
-                                                        }}
-                                                    >
-                                                        <Share2 size={14} />
-                                                    </button>
                                                     <button title="Редактировать" onClick={() => editCollection(col)}><Pencil size={14} /></button>
                                                     <button title="Удалить" onClick={(e) => { e.stopPropagation(); deleteCollection(col.id); }}><Trash2 size={14} /></button>
                                                 </div>
@@ -337,72 +427,63 @@ export default function ProfilePage({
                             </div>
                         )}
 
-                        {/* 🔥 НОВЫЙ БЛОК: В ИЗБРАННОМ */}
+                        {/* В избранном */}
                         <div className="favorites-section">
-                            <div className="favorites-header">
+                            <div className="favorites-header-simple">
                                 <h2><Heart size={20} fill="#ec4899" color="#ec4899" /> В избранном</h2>
-                                <div className="favorites-tabs">
-                                    <button
-                                        className={`fav-tab ${favoritesTab === 'movies' ? 'active' : ''}`}
-                                        onClick={() => setFavoritesTab('movies')}
-                                    >
-                                        Фильмы ({favoriteMoviesCount})
-                                    </button>
-                                    <button
-                                        className={`fav-tab ${favoritesTab === 'actors' ? 'active' : ''}`}
-                                        onClick={() => setFavoritesTab('actors')}
-                                    >
-                                        Актёры ({favoriteActorsCount})
-                                    </button>
-                                    <button
-                                        className={`fav-tab ${favoritesTab === 'directors' ? 'active' : ''}`}
-                                        onClick={() => setFavoritesTab('directors')}
-                                    >
-                                        Режиссёры ({favoriteDirectorsCount})
-                                    </button>
-                                </div>
                             </div>
-
-                            <div className="favorites-content">
-                                {/* Фильмы */}
-                                {favoritesTab === 'movies' && (
-                                    <div className="favorites-grid">
-                                        {favoriteMoviesCount > 0 ? (
-                                            <button className="view-favorites-btn" onClick={() => setIsFavoritesViewerOpen(true)}>
-                                                <Heart size={20} fill="#ec4899" color="#ec4899" />
-                                                <span>Посмотреть {favoriteMoviesCount} избранных фильмов</span>
-                                            </button>
-                                        ) : (
-                                            <p className="favorites-empty">Нет избранных фильмов</p>
-                                        )}
+                            
+                            {/* Переключатель табов */}
+                            <div className="favorites-tabs">
+                                <button
+                                    className={`fav-tab ${activeFavoriteTab === 'all' ? 'active' : ''}`}
+                                    onClick={() => setActiveFavoriteTab('all')}
+                                >
+                                    Все ({favoritesData.length})
+                                </button>
+                                <button
+                                    className={`fav-tab ${activeFavoriteTab === 'movies' ? 'active' : ''}`}
+                                    onClick={() => setActiveFavoriteTab('movies')}
+                                >
+                                    <Film size={14} /> Фильмы ({favoritesData.filter(i => i.object_type === 'film').length})
+                                </button>
+                                <button
+                                    className={`fav-tab ${activeFavoriteTab === 'people' ? 'active' : ''}`}
+                                    onClick={() => setActiveFavoriteTab('people')}
+                                >
+                                    <User size={14} /> Персоны ({favoritesData.filter(i => i.object_type === 'person').length})
+                                </button>
+                            </div>
+                            
+                            <div className="favorites-content-list">
+                                {favoritesAuthError ? (
+                                    <div className="favorites-auth-error">
+                                        <LogIn size={48} opacity={0.3} />
+                                        <p>Требуется авторизация</p>
+                                        <span>Войдите, чтобы управлять избранным</span>
                                     </div>
-                                )}
-
-                                {/* Актёры */}
-                                {favoritesTab === 'actors' && (
-                                    <div className="favorites-grid">
-                                        {favoriteActorsCount > 0 ? (
-                                            <button className="view-favorites-btn" onClick={() => setIsFavoritesViewerOpen(true)}>
-                                                <User size={20} />
-                                                <span>Посмотреть {favoriteActorsCount} избранных актёров</span>
-                                            </button>
-                                        ) : (
-                                            <p className="favorites-empty">Нет избранных актёров</p>
-                                        )}
+                                ) : favoritesLoading ? (
+                                    <div className="favorites-loading">
+                                        <div className="spinner" />
+                                        <p>Загрузка...</p>
                                     </div>
-                                )}
-
-                                {/* Режиссёры */}
-                                {favoritesTab === 'directors' && (
-                                    <div className="favorites-grid">
-                                        {favoriteDirectorsCount > 0 ? (
-                                            <button className="view-favorites-btn" onClick={() => setIsFavoritesViewerOpen(true)}>
-                                                <Clapperboard size={20} />
-                                                <span>Посмотреть {favoriteDirectorsCount} избранных режиссёров</span>
-                                            </button>
-                                        ) : (
-                                            <p className="favorites-empty">Нет избранных режиссёров</p>
-                                        )}
+                                ) : favoritesData.length === 0 ? (
+                                    <div className="favorites-empty-state">
+                                        <Heart size={48} opacity={0.3} />
+                                        <p>В избранном пока пусто</p>
+                                        <span>Добавляйте фильмы, актёров и режиссёров в избранное</span>
+                                    </div>
+                                ) : (
+                                    <div className="favorites-grid-list">
+                                        {activeFavoriteTab === 'all' && favoritesData.map(item => renderFavoriteItem(item))}
+                                        {activeFavoriteTab === 'movies' && favoritesData
+                                            .filter(item => item.object_type === 'film')
+                                            .map(item => renderFavoriteItem(item))
+                                        }
+                                        {activeFavoriteTab === 'people' && favoritesData
+                                            .filter(item => item.object_type === 'person')
+                                            .map(item => renderFavoriteItem(item))
+                                        }
                                     </div>
                                 )}
                             </div>
@@ -420,22 +501,10 @@ export default function ProfilePage({
                 collections={user.collections}
             />
 
-            <FavoritesViewerModal
-                isOpen={isFavoritesViewerOpen}
-                onClose={() => setIsFavoritesViewerOpen(false)}
-                favoriteMovies={user.favoriteMovies || []}
-                favoriteActors={user.favoriteActors || []}
-                favoriteDirectors={user.favoriteDirectors || []}
-                onMovieClick={onMovieClick}
-                onActorClick={onActorClick}
-                onDirectorClick={onDirectorClick}
-            />
-
             <SingleCollectionModal
                 isOpen={isSingleCollectionOpen}
                 onClose={() => setIsSingleCollectionOpen(false)}
                 collection={user.collections.find(c => c.id === selectedCollection?.id) || selectedCollection}
-                allMovies={allMovies}
                 onMovieClick={onMovieClick}
                 onDelete={deleteCollection}
                 onEdit={editCollection}

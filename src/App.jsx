@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import MovieCarousel from './components/MovieCarousel'
@@ -14,18 +14,20 @@ import DirectorSearchModal from './components/DirectorSearchModal'
 import ActorCardModal from './components/ActorCardModal'
 import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
-import { isAuthenticated, getUser, getMe, clearAuthData } from './services/auth'
+import { isAuthenticated, getUser, getMe, clearAuthData, ensureValidToken } from './services/auth'
+import { getProfile, updateProfile } from './services/profile'
+import { getMyCollections, createCollection, updateCollection as apiUpdateCollection, deleteCollection as apiDeleteCollection } from './services/collections'
+import { getFavorites, toggleFilm, togglePerson } from './services/favorites'
+
+// Ключ для localStorage избранного
+const FAVORITES_KEY = 'favorites_cache'
 
 // === ПРОСТОЙ КОМПОНЕНТ ГЛАВНОЙ ===
 function Home({ onMovieClick, onOpenFeatureModal }) {
     return (
         <>
             <Hero onOpenModal={onOpenFeatureModal} />
-            <MovieCarousel
-                onMovieClick={onMovieClick}
-                favoriteMovies={[]}
-                onToggleFavorite={() => {}}
-            />
+            <MovieCarousel title="🔥 Популярное сейчас" onMovieClick={onMovieClick} />
         </>
     )
 }
@@ -34,19 +36,10 @@ function Home({ onMovieClick, onOpenFeatureModal }) {
 function App() {
     // 🔐 Состояние авторизации
     const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
     // 🎬 Состояние модалки фильма
     const [selectedFilmId, setSelectedFilmId] = useState(null)
     const [isMovieModalOpen, setIsMovieModalOpen] = useState(false)
-
-    // 🎯 Состояние фич-модалок
-    const [featureModalType, setFeatureModalType] = useState(null)
-    const [isSelectionOpen, setIsSelectionOpen] = useState(false)
-    const [isRandomOpen, setIsRandomOpen] = useState(false)
-    const [isActorOpen, setIsActorOpen] = useState(false)
-    const [isDirectorOpen, setIsDirectorOpen] = useState(false)
-    const [isUpcomingOpen, setIsUpcomingOpen] = useState(false)
 
     // 🎭 Состояние карточек актёров/режиссёров
     const [selectedActorId, setSelectedActorId] = useState(null)
@@ -73,106 +66,327 @@ function App() {
     // 🔐 Проверка авторизации при загрузке
     useEffect(() => {
         const checkAuth = async () => {
-            if (isAuthenticated()) {
+            const token = isAuthenticated()
+
+            // Пробуем загрузить избранное из localStorage (для всех)
+            const cached = localStorage.getItem(FAVORITES_KEY)
+            if (cached) {
                 try {
-                    const userData = await getMe()
-                    if (userData) {
+                    const parsed = JSON.parse(cached)
+                    setUser(prev => ({
+                        ...prev,
+                        favoriteMovies: parsed.favoriteMovies || [],
+                        favoriteActors: parsed.favoriteActors || [],
+                        favoriteDirectors: parsed.favoriteDirectors || []
+                    }))
+                } catch (e) {
+                    console.error('[Auth] Failed to parse cached favorites:', e)
+                }
+            }
+
+            if (!token) {
+                // Нет токена - проверяем, есть ли сохранённый пользователь
+                const savedUser = getUser()
+                if (savedUser) {
+                    // Пользователь был сохранён, но токена нет - возможно истёк
+                    // Пробуем обновить токен
+                    const newToken = await ensureValidToken()
+                    if (newToken) {
                         setIsLoggedIn(true)
+                        // Загружаем актуальные данные профиля
+                        try {
+                            const profileData = await getProfile()
+                            if (profileData) {
+                                setUser(prev => ({
+                                    ...prev,
+                                    ...profileData
+                                }))
+                            }
+                        } catch (err) {
+                            console.error('[Auth] Failed to load profile:', err)
+                        }
+                        return
+                    }
+                }
+                return
+            }
+
+            // Токен есть - проверяем его валидность через getMe
+            try {
+                const userData = await getMe()
+                if (userData) {
+                    setIsLoggedIn(true)
+                    setUser(prev => ({
+                        ...prev,
+                        id: userData.id,
+                        name: userData.full_name || userData.username,
+                        email: userData.email,
+                        username: userData.username,
+                        createdAt: userData.created_at
+                    }))
+                    
+                    // Загружаем избранное с бэкенда
+                    try {
+                        const favoritesData = await getFavorites(1, 100)
+                        const items = favoritesData.items || []
+                        
+                        // Разделяем на фильмы и персоны
+                        const favoriteMovies = []
+                        const favoritePeople = []
+                        
+                        items.forEach(item => {
+                            if (item.object_type === 'film') {
+                                // Бэкенд возвращает object_id и film_data.kinopoiskId
+                                const filmId = item.film_data?.kinopoiskId || item.object_id
+                                if (filmId) {
+                                    favoriteMovies.push(Number(filmId))
+                                }
+                            } else if (item.object_type === 'person') {
+                                const personId = item.object_id || item.person_data?.kinopoiskId
+                                if (personId) {
+                                    favoritePeople.push(Number(personId))
+                                }
+                            }
+                        })
+                        
                         setUser(prev => ({
                             ...prev,
-                            id: userData.id,
-                            name: userData.full_name || userData.username,
-                            email: userData.email,
-                            username: userData.username
+                            favoriteMovies,
+                            favoriteActors: favoritePeople,
+                            favoriteDirectors: []
                         }))
+                        
+                        // Сохраняем в localStorage для быстрого доступа
+                        localStorage.setItem(FAVORITES_KEY, JSON.stringify({
+                            favoriteMovies,
+                            favoriteActors: favoritePeople,
+                            favoriteDirectors: []
+                        }))
+                    } catch (favError) {
+                        console.error('[Auth] Failed to load favorites:', favError)
                     }
-                } catch (error) {
-                    console.error('Auth check failed:', error)
-                    clearAuthData()
-                    setIsLoggedIn(false)
                 }
+            } catch (error) {
+                // Если ошибка 401 или "Необходима авторизация", пробуем обновить токен
+                const isAuthError = error.message?.includes('401') || error.message?.includes('Необходима авторизация')
+                if (isAuthError) {
+                    const newToken = await ensureValidToken()
+                    if (newToken) {
+                        // Токен обновлён, пробуем ещё раз получить пользователя
+                        try {
+                            const userData = await getMe()
+                            if (userData) {
+                                setIsLoggedIn(true)
+                                setUser(prev => ({
+                                    ...prev,
+                                    id: userData.id,
+                                    name: userData.full_name || userData.username,
+                                    email: userData.email,
+                                    username: userData.username
+                                }))
+                            }
+                        } catch (retryError) {
+                            clearAuthData()
+                        }
+                    } else {
+                        clearAuthData()
+                    }
+                } else {
+                    clearAuthData()
+                }
+                setIsLoggedIn(false)
             }
         }
         checkAuth()
     }, [])
 
     // 🔓 Открыть модалку фильма
-    const handleOpenMovieModal = useCallback((film) => {
-        const newFilmId = film.kinopoiskId || film.id
-        // Если кликнули на тот же фильм - ничего не делаем
-        if (newFilmId === selectedFilmId && isMovieModalOpen) return
-
-        // Сначала закрываем текущую модалку, затем открываем новую
-        setIsMovieModalOpen(false)
-        setSelectedFilmId(null)
-
-        setTimeout(() => {
-            setSelectedFilmId(newFilmId)
+    const handleOpenMovieModal = (movie) => {
+        if (movie?.kinopoiskId || movie?.id) {
+            setSelectedFilmId(movie.kinopoiskId || movie.id)
             setIsMovieModalOpen(true)
-        }, 100)
-    }, [selectedFilmId, isMovieModalOpen])
+        }
+    }
 
     // 🎭 Открыть карточку актёра
     const handleOpenActorCard = (actorId) => {
-        setSelectedActorId(actorId)
-        setIsActorCardOpen(true)
+        if (actorId) {
+            setSelectedActorId(actorId)
+            setIsActorCardOpen(true)
+        }
     }
 
     // 🎬 Открыть карточку режиссёра
     const handleOpenDirectorCard = (directorId) => {
-        setSelectedDirectorId(directorId)
-        setIsDirectorCardOpen(true)
-    }
-
-    // 🎪 Открыть фич-модалку по типу
-    const handleOpenFeatureModal = (type) => {
-        if (type === 'selection') setIsSelectionOpen(true)
-        else if (type === 'random') setIsRandomOpen(true)
-        else if (type === 'actor') setIsActorOpen(true)
-        else if (type === 'director') setIsDirectorOpen(true)
-        else if (type === 'upcoming') setIsUpcomingOpen(true)
-        else if (type === 'playlist') setFeatureModalType('playlist')
-    }
-
-    // 👤 Клик по профилю — проверяем авторизацию
-    const handleProfileClick = () => {
-        if (!isLoggedIn) {
-            setIsAuthModalOpen(true)
+        if (directorId) {
+            setSelectedDirectorId(directorId)
+            setIsDirectorCardOpen(true)
         }
-        // Если авторизован — переход идёт через Link в Header
     }
 
     // ❤️ Переключатель избранного для фильмов
-    const toggleFavoriteMovie = (movieId) => {
+    const toggleFavoriteMovie = async (movieId) => {
+        const numericId = Number(movieId)
+        
+        if (!isLoggedIn) {
+            // Если не авторизован - просто обновляем локально (как было)
+            setUser(prev => {
+                const list = prev.favoriteMovies || []
+                const updated = list.includes(numericId)
+                    ? list.filter(id => id !== numericId)
+                    : [...list, numericId]
+                return { ...prev, favoriteMovies: updated }
+            })
+            return
+        }
+
+        // Оптимистичное обновление UI
+        let previousState
         setUser(prev => {
             const list = prev.favoriteMovies || []
-            const updated = list.includes(movieId)
-                ? list.filter(id => id !== movieId)
-                : [...list, movieId]
+            previousState = list
+            const updated = list.includes(numericId)
+                ? list.filter(id => id !== numericId)
+                : [...list, numericId]
+            
+            // Сохраняем в localStorage сразу
+            const newFavorites = {
+                ...JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}'),
+                favoriteMovies: updated
+            }
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites))
+            
             return { ...prev, favoriteMovies: updated }
         })
+
+        try {
+            const result = await toggleFilm(numericId)
+            // Если API вернул неожиданный результат - синхронизируем
+            if (result.added !== !previousState.includes(numericId)) {
+                setUser(prev => {
+                    const list = prev.favoriteMovies || []
+                    const updated = result.added
+                        ? [...list, numericId]
+                        : list.filter(id => id !== numericId)
+                    return { ...prev, favoriteMovies: updated }
+                })
+            }
+        } catch (error) {
+            console.error('Failed to toggle movie favorite:', error)
+            // Откат при ошибке
+            setUser(prev => ({
+                ...prev,
+                favoriteMovies: previousState
+            }))
+        }
     }
 
     // ❤️ Переключатель избранного для актёров
-    const toggleFavoriteActor = (actorId) => {
+    const toggleFavoriteActor = async (actorId) => {
+        const numericId = Number(actorId)
+        
+        if (!isLoggedIn) {
+            setUser(prev => {
+                const list = prev.favoriteActors || []
+                const updated = list.includes(numericId)
+                    ? list.filter(id => id !== numericId)
+                    : [...list, numericId]
+                return { ...prev, favoriteActors: updated }
+            })
+            return
+        }
+
+        // Оптимистичное обновление UI
+        let previousState
         setUser(prev => {
             const list = prev.favoriteActors || []
-            const updated = list.includes(actorId)
-                ? list.filter(id => id !== actorId)
-                : [...list, actorId]
+            previousState = list
+            const updated = list.includes(numericId)
+                ? list.filter(id => id !== numericId)
+                : [...list, numericId]
+
+            // Сохраняем в localStorage сразу
+            const newFavorites = {
+                ...JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}'),
+                favoriteActors: updated
+            }
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites))
+
             return { ...prev, favoriteActors: updated }
         })
+
+        try {
+            const result = await togglePerson(numericId)
+            if (result.added !== !previousState.includes(numericId)) {
+                setUser(prev => {
+                    const list = prev.favoriteActors || []
+                    const updated = result.added
+                        ? [...list, numericId]
+                        : list.filter(id => id !== numericId)
+                    return { ...prev, favoriteActors: updated }
+                })
+            }
+        } catch (error) {
+            console.error('Failed to toggle actor favorite:', error)
+            setUser(prev => ({
+                ...prev,
+                favoriteActors: previousState
+            }))
+        }
     }
 
     // ❤️ Переключатель избранного для режиссёров
-    const toggleFavoriteDirector = (directorId) => {
+    const toggleFavoriteDirector = async (directorId) => {
+        const numericId = Number(directorId)
+        
+        if (!isLoggedIn) {
+            setUser(prev => {
+                const list = prev.favoriteDirectors || []
+                const updated = list.includes(numericId)
+                    ? list.filter(id => id !== numericId)
+                    : [...list, numericId]
+                return { ...prev, favoriteDirectors: updated }
+            })
+            return
+        }
+
+        // Оптимистичное обновление UI
+        let previousState
         setUser(prev => {
             const list = prev.favoriteDirectors || []
-            const updated = list.includes(directorId)
-                ? list.filter(id => id !== directorId)
-                : [...list, directorId]
+            previousState = list
+            const updated = list.includes(numericId)
+                ? list.filter(id => id !== numericId)
+                : [...list, numericId]
+
+            // Сохраняем в localStorage сразу
+            const newFavorites = {
+                ...JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}'),
+                favoriteDirectors: updated
+            }
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites))
+
             return { ...prev, favoriteDirectors: updated }
         })
+
+        try {
+            const result = await togglePerson(numericId)
+            if (result.added !== !previousState.includes(numericId)) {
+                setUser(prev => {
+                    const list = prev.favoriteDirectors || []
+                    const updated = result.added
+                        ? [...list, numericId]
+                        : list.filter(id => id !== numericId)
+                    return { ...prev, favoriteDirectors: updated }
+                })
+            }
+        } catch (error) {
+            console.error('Failed to toggle director favorite:', error)
+            setUser(prev => ({
+                ...prev,
+                favoriteDirectors: previousState
+            }))
+        }
     }
 
     // ✏️ Обновление подборки
@@ -225,18 +439,115 @@ function App() {
 
     return (
         <Router>
-            <div className="app">
-                {/* Фоновые эффекты */}
-                <div className="background-effects">
-                    <div className="glow-left"></div>
-                    <div className="glow-right"></div>
-                </div>
+            <AppContent
+                isLoggedIn={isLoggedIn}
+                setIsLoggedIn={setIsLoggedIn}
+                user={user}
+                setUser={setUser}
+                selectedFilmId={selectedFilmId}
+                setSelectedFilmId={setSelectedFilmId}
+                isMovieModalOpen={isMovieModalOpen}
+                setIsMovieModalOpen={setIsMovieModalOpen}
+                handleOpenMovieModal={handleOpenMovieModal}
+                handleOpenActorCard={handleOpenActorCard}
+                handleOpenDirectorCard={handleOpenDirectorCard}
+                toggleFavoriteMovie={toggleFavoriteMovie}
+                toggleFavoriteActor={toggleFavoriteActor}
+                toggleFavoriteDirector={toggleFavoriteDirector}
+                updateCollection={updateCollection}
+                deleteCollection={deleteCollection}
+                addMovieToCollections={addMovieToCollections}
+                createNewCollection={createNewCollection}
+                selectedActorId={selectedActorId}
+                setSelectedActorId={setSelectedActorId}
+                isActorCardOpen={isActorCardOpen}
+                setIsActorCardOpen={setIsActorCardOpen}
+                selectedDirectorId={selectedDirectorId}
+                isDirectorCardOpen={isDirectorCardOpen}
+                setIsDirectorCardOpen={setIsDirectorCardOpen}
+            />
+        </Router>
+    )
+}
 
-                {/* Шапка */}
-                <Header
+// Компонент внутри Router контекста
+function AppContent({
+    isLoggedIn,
+    setIsLoggedIn,
+    user,
+    setUser,
+    selectedFilmId,
+    setSelectedFilmId,
+    isMovieModalOpen,
+    setIsMovieModalOpen,
+    handleOpenMovieModal,
+    handleOpenActorCard,
+    handleOpenDirectorCard,
+    toggleFavoriteMovie,
+    toggleFavoriteActor,
+    toggleFavoriteDirector,
+    updateCollection,
+    deleteCollection,
+    addMovieToCollections,
+    createNewCollection,
+    selectedActorId,
+    setSelectedActorId,
+    isActorCardOpen,
+    setIsActorCardOpen,
+    selectedDirectorId,
+    isDirectorCardOpen,
+    setIsDirectorCardOpen
+}) {
+    const navigate = useNavigate()
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+    const [authNavigateTo, setAuthNavigateTo] = useState(null)
+    const [featureModalType, setFeatureModalType] = useState(null)
+    const [isSelectionOpen, setIsSelectionOpen] = useState(false)
+    const [isRandomOpen, setIsRandomOpen] = useState(false)
+    const [isActorOpen, setIsActorOpen] = useState(false)
+    const [isDirectorOpen, setIsDirectorOpen] = useState(false)
+    const [isUpcomingOpen, setIsUpcomingOpen] = useState(false)
+    const [pendingCollectionCreate, setPendingCollectionCreate] = useState(false)
+
+    // 🎪 Открыть фич-модалку по типу
+    const handleOpenFeatureModal = (type) => {
+        if (type === 'selection') setIsSelectionOpen(true)
+        else if (type === 'random') setIsRandomOpen(true)
+        else if (type === 'actor') setIsActorOpen(true)
+        else if (type === 'director') setIsDirectorOpen(true)
+        else if (type === 'upcoming') setIsUpcomingOpen(true)
+        else if (type === 'playlist') {
+            // Показываем FeatureModal для всех (и авторизованных, и нет)
+            setFeatureModalType('playlist')
+        }
+    }
+
+    // 👤 Клик по профилю
+    const handleProfileClick = () => {
+        if (!isLoggedIn) {
+            // Запоминаем, что после логина нужно перейти в профиль
+            setPendingCollectionCreate(false) // Сбрасываем флаг подборки если был
+            setAuthNavigateTo('/profile')
+            setIsAuthModalOpen(true)
+        } else {
+            navigate('/profile')
+        }
+    }
+
+    return (
+        <div className="app">
+            {/* Фоновые эффекты */}
+            <div className="background-effects">
+                <div className="glow-left"></div>
+                <div className="glow-right"></div>
+            </div>
+
+            {/* Шапка */}
+            <Header
                     onMovieClick={handleOpenMovieModal}
                     onActorClick={handleOpenActorCard}
                     onProfileClick={handleProfileClick}
+                    isLoggedIn={isLoggedIn}
                 />
 
                 <Routes>
@@ -253,7 +564,6 @@ function App() {
                             isLoggedIn={isLoggedIn}
                             onMovieClick={handleOpenMovieModal}
                             onActorClick={handleOpenActorCard}
-                            onDirectorClick={handleOpenDirectorCard}
                         />
                     } />
                 </Routes>
@@ -275,7 +585,24 @@ function App() {
                     onCreateCollection={createNewCollection}
                 />
 
-                <FeatureModal type={featureModalType} isOpen={!!featureModalType} onClose={() => setFeatureModalType(null)} />
+                <FeatureModal
+                    type={featureModalType}
+                    isOpen={!!featureModalType}
+                    onClose={() => setFeatureModalType(null)}
+                    isLoggedIn={isLoggedIn}
+                    onNavigateToProfile={() => {
+                        setFeatureModalType(null)
+                        if (isLoggedIn) {
+                            // Авторизован — сразу в профиль с модалкой создания
+                            navigate('/profile', { state: { openCreateCollection: true } })
+                        } else {
+                            // Не авторизован — запоминаем для создания подборки после логина
+                            setPendingCollectionCreate(true)
+                            setAuthNavigateTo('/profile')
+                            setIsAuthModalOpen(true)
+                        }
+                    }}
+                />
 
                 <SelectionModal
                     isOpen={isSelectionOpen}
@@ -329,12 +656,27 @@ function App() {
 
                 <AuthModal
                     isOpen={isAuthModalOpen}
-                    onClose={() => setIsAuthModalOpen(false)}
+                    onClose={() => {
+                        setIsAuthModalOpen(false)
+                        setAuthNavigateTo(null)
+                    }}
                     setIsLoggedIn={setIsLoggedIn}
                     setUser={setUser}
+                    navigateTo={authNavigateTo}
+                    onAfterLogin={() => {
+                        if (pendingCollectionCreate) {
+                            setPendingCollectionCreate(false)
+                            navigate('/profile', { state: { openCreateCollection: true } })
+                            return true // Обработали навигацию
+                        }
+                        // Если есть navigateTo (например, из профиля), используем его
+                        if (authNavigateTo) {
+                            return false // Пусть AuthModal сам обработает навигацию
+                        }
+                        return false
+                    }}
                 />
             </div>
-        </Router>
     )
 }
 

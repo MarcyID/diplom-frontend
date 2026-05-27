@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Sparkles, Shuffle, ListVideo, UserSearch, Clapperboard, CalendarClock } from 'lucide-react'
 
-function FeatureModal({ type, isOpen, onClose }) {
+function FeatureModal({ type, isOpen, onClose, isLoggedIn, onNavigateToProfile }) {
     const features = {
         selection: {
             title: 'Подобрать фильм',
@@ -45,6 +45,24 @@ function FeatureModal({ type, isOpen, onClose }) {
 
     const Icon = feature.icon
 
+    const handleStartClick = () => {
+        if (type === 'playlist') {
+            if (!isLoggedIn) {
+                // Для подборки без авторизации — открываем окно логина
+                onClose()
+                onNavigateToProfile()
+            } else {
+                // Для авторизованных — переход в профиль с открытой модалкой создания
+                onClose()
+                // Навигация будет в App.jsx через onNavigateToProfile
+                onNavigateToProfile()
+            }
+        } else {
+            // Для всех остальных — просто закрываем
+            onClose()
+        }
+    }
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -79,7 +97,7 @@ function FeatureModal({ type, isOpen, onClose }) {
                             <button
                                 className="feature-button"
                                 style={{ background: feature.color }}
-                                onClick={onClose}
+                                onClick={handleStartClick}
                             >
                                 Начать
                             </button>

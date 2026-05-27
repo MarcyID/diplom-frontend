@@ -10,7 +10,7 @@ import vkIcon from '../assets/icons/vk.svg'
 import yandexIcon from '../assets/icons/yandex.svg'
 
 // Принимаем setUser, чтобы сохранять имя
-function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser }) {
+function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navigateTo }) {
     const [isLogin, setIsLogin] = useState(true)
     const [showPassword, setShowPassword] = useState(false)
 
@@ -76,9 +76,25 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser }) {
                     name: response.user.full_name || name
                 }))
 
-                // Закрываем модалку и переходим в профиль
+                // Закрываем модалку
                 onClose()
-                navigate('/profile')
+
+                // Сначала проверяем onAfterLogin (для создания подборки)
+                if (onAfterLogin) {
+                    const shouldHandle = onAfterLogin()
+                    if (shouldHandle) {
+                        // onAfterLogin обработал навигацию
+                        return
+                    }
+                }
+                
+                // Если указан конкретный путь для навигации
+                if (navigateTo) {
+                    navigate(navigateTo)
+                } else {
+                    // Иначе просто переходим в профиль
+                    navigate('/profile')
+                }
             } else {
                 console.error('[AuthModal] No user in response')
                 setApiError('Ошибка: не удалось получить данные пользователя')

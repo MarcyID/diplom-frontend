@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Calendar, Clock, Film, Star, ChevronRight } from 'lucide-react'
-import { usePremieres } from '../hooks/useKinopoisk.js'
+import * as api from '../services/api.js'
 
 // Форматирование даты: "2026-05-07" → "7 мая 2026"
 const formatDate = (dateString) => {
@@ -24,7 +25,30 @@ const formatMonthYear = (dateString) => {
 }
 
 function UpcomingModal({ isOpen, onClose, onMovieClick }) {
-    const { data: premieres, loading, error } = usePremieres(1)
+    const [premieres, setPremieres] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
+
+    // Загружаем премьеры только при открытии модалки
+    useEffect(() => {
+        if (!isOpen) return
+
+        const loadPremieres = async () => {
+            setLoading(true)
+            setError(null)
+            try {
+                const films = await api.getPremieres(1)
+                setPremieres(films)
+            } catch (err) {
+                console.error('Failed to load premieres:', err)
+                setError(err)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        loadPremieres()
+    }, [isOpen])
 
     // Фильтруем прошедшие премьеры (оставляем только будущие)
     const today = new Date()
@@ -41,7 +65,7 @@ function UpcomingModal({ isOpen, onClose, onMovieClick }) {
     nextMonth.setMonth(nextMonth.getMonth() + 1)
     const currentMonthStr = formatMonthYear(new Date().toISOString())
     const nextMonthStr = formatMonthYear(nextMonth.toISOString())
-    
+
     // Если год одинаковый, объединяем (май-июнь 2026)
     const currentYear = new Date().getFullYear()
     const nextYear = nextMonth.getFullYear()
