@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import MovieCarousel from './components/MovieCarousel'
@@ -14,6 +14,7 @@ import DirectorSearchModal from './components/DirectorSearchModal'
 import ActorCardModal from './components/ActorCardModal'
 import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
+import SingleCollectionModal from './components/SingleCollectionModal'
 import { isAuthenticated, getUser, getMe, clearAuthData, ensureValidToken } from './services/auth'
 import { setAuthExpiredCallback } from './services/api-core'
 import { getProfile, updateProfile } from './services/profile'
@@ -24,7 +25,23 @@ import { getFavorites, toggleFilm, togglePerson } from './services/favorites'
 const FAVORITES_KEY = 'favorites_cache'
 
 // === ПРОСТОЙ КОМПОНЕНТ ГЛАВНОЙ ===
-function Home({ onMovieClick, onOpenFeatureModal }) {
+function Home({ onMovieClick, onOpenFeatureModal, onOpenCollection }) {
+    const location = useLocation()
+
+    // Обработка параметра ?collection={id} при открытии ссылки
+    useEffect(() => {
+        const params = new URLSearchParams(location.search)
+        const collectionId = params.get('collection')
+        if (collectionId) {
+            // Очищаем параметр из URL
+            window.history.replaceState({}, document.title, window.location.pathname)
+            // Открываем коллекцию (если функция передана)
+            if (onOpenCollection) {
+                onOpenCollection(Number(collectionId))
+            }
+        }
+    }, [location.search, onOpenCollection])
+
     return (
         <>
             <Hero onOpenModal={onOpenFeatureModal} />
@@ -687,6 +704,55 @@ function AppContent({
     const [isUpcomingOpen, setIsUpcomingOpen] = useState(false)
     const [pendingCollectionCreate, setPendingCollectionCreate] = useState(false)
 
+    // 📁 Состояние для просмотра коллекции по ссылке
+    const [selectedCollectionId, setSelectedCollectionId] = useState(null)
+    const [sharedCollection, setSharedCollection] = useState(null)
+
+    // Загрузка коллекции по ID для просмотра
+    useEffect(() => {
+        if (selectedCollectionId) {
+            // Пытаемся найти в уже загруженных коллекциях пользователя
+            const userCollection = user.collections?.find(c => c.id === selectedCollectionId)
+            if (userCollection) {
+                setSharedCollection(userCollection)
+            } else {
+                // Если не найдено, загружаем через API (для публичного доступа)
+                getCollection(selectedCollectionId)
+                    .then(collection => {
+                        if (collection) {
+                            setSharedCollection({
+                                id: collection.id,
+                                title: collection.title,
+                                description: collection.description || '',
+                                is_public: collection.is_public,
+                                movieIds: collection.films?.map(f => f.kinopoiskId) || [],
+                                films: collection.films?.length || 0,
+                                created_at: collection.created_at,
+                                updated_at: collection.updated_at,
+                                gradient: `linear-gradient(135deg, hsl(${Math.random() * 360}, 70%, 50%), hsl(${Math.random() * 360}, 70%, 40%))`
+                            })
+                        }
+                    })
+                    .catch(err => console.error('[App] Failed to load shared collection:', err))
+            }
+        } else {
+            setSharedCollection(null)
+        }
+    }, [selectedCollectionId, user.collections])
+
+    // Открытие коллекции по ID (для шаринга)
+    const handleOpenCollection = useCallback((collectionId) => {
+        if (collectionId) {
+            setSelectedCollectionId(collectionId)
+        }
+    }, [])
+
+    // Закрытие модалки коллекции при открытии фильма
+    const handleOpenMovieModalFromCollection = useCallback((filmData) => {
+        setSelectedCollectionId(null)
+        handleOpenMovieModal(filmData)
+    }, [handleOpenMovieModal])
+
     // Устанавливаем глобальный callback для обработки 401 ошибки
     useEffect(() => {
         setAuthExpiredCallback(() => setIsAuthModalOpen(true))
@@ -738,6 +804,7 @@ function AppContent({
                         <Home
                             onMovieClick={handleOpenMovieModal}
                             onOpenFeatureModal={handleOpenFeatureModal}
+                            onOpenCollection={handleOpenCollection}
                         />
                     } />
                     <Route path="/profile" element={
@@ -858,14 +925,28 @@ function AppContent({
                         if (pendingCollectionCreate) {
                             setPendingCollectionCreate(false)
                             navigate('/profile', { state: { openCreateCollection: true } })
-                            return true // Обработали навигацию
+                            return true
                         }
-                        // Если есть navigateTo (например, из профиля), используем его
                         if (authNavigateTo) {
-                            return false // Пусть AuthModal сам обработает навигацию
+                            return false
                         }
                         return false
                     }}
+                />
+
+                {/* Модалка просмотра коллекции по ссылке */}
+                <SingleCollectionModal
+                    isOpen={!!selectedCollectionId}
+                    onClose={() => setSelectedCollectionId(null)}
+                    collection={sharedCollection}
+                    userCollections={sharedCollection ? [sharedCollection] : user.collections}
+                    onMovieClick={handleOpenMovieModalFromCollection}
+                    onUpdate={updateCollection}
+                    onDelete={deleteCollection}
+                    onRemoveFilm={removeMovieFromCollection}
+                    startInEditMode={false}
+                    onStartInEditModeApplied={() => {}}
+                    isReadOnly={!user.collections?.find(c => c.id === selectedCollectionId)}
                 />
             </div>
     )

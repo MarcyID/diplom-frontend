@@ -7,9 +7,10 @@ import { getRating, getTitle, generateGradient } from '../utils/kinopoisk'
 export default function SingleCollectionModal({
                                                   isOpen, onClose, collection, userCollections,
                                                   onUpdate, onDelete, startInEditMode,
-                                                  onRemoveFilm, onMovieClick, onStartInEditModeApplied
+                                                  onRemoveFilm, onMovieClick, onStartInEditModeApplied,
+                                                  isReadOnly = false
                                               }) {
-    const [isEditing, setIsEditing] = useState(false)
+    const [isEditing, setIsEditing] = useState(isReadOnly ? false : startInEditMode)
     const [editTitle, setEditTitle] = useState(collection?.title || '')
     const [editDescription, setEditDescription] = useState(collection?.description || '')
     const shareBtnRef = useRef(null)
@@ -100,42 +101,46 @@ export default function SingleCollectionModal({
                             </div>
 
                             <div className="collection-actions-bar">
-                                {isEditing ? (
+                                {!isReadOnly && isEditing ? (
                                     <>
                                         <button className="action-btn-save" onClick={saveChanges}><Check size={14} /> Сохранить</button>
                                         <button className="action-btn-cancel" onClick={() => { setIsEditing(false); setEditTitle(collection.title); setEditDescription(collection.description || ''); }}>Отмена</button>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="collection-actions-group">
-                                            <button className="action-btn-edit" onClick={() => setIsEditing(true)}><Pencil size={14} /> Редактировать</button>
-                                            <button className="action-btn-delete" onClick={() => onDelete(collection.id)}><Trash2 size={14} /> Удалить подборку</button>
+                                        {!isReadOnly && (
+                                            <div className="collection-actions-group">
+                                                <button className="action-btn-edit" onClick={() => setIsEditing(true)}><Pencil size={14} /> Редактировать</button>
+                                                <button className="action-btn-delete" onClick={() => onDelete(collection.id)}><Trash2 size={14} /> Удалить подборку</button>
+                                            </div>
+                                        )}
+                                        <div style={{ marginLeft: 'auto' }}>
+                                            <button
+                                                ref={shareBtnRef}
+                                                className="share-collection-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const shareUrl = `${window.location.origin}/?collection=${collection.id}`;
+                                                    navigator.clipboard.writeText(shareUrl).then(() => {
+                                                        if (!shareBtnRef.current) return;
+                                                        const originalContent = shareBtnRef.current.innerHTML;
+                                                        shareBtnRef.current.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Скопировано!';
+                                                        shareBtnRef.current.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                                                        setTimeout(() => {
+                                                            if (shareBtnRef.current) {
+                                                                shareBtnRef.current.innerHTML = originalContent;
+                                                                shareBtnRef.current.style.background = '';
+                                                            }
+                                                        }, 2000);
+                                                    }).catch((err) => {
+                                                        console.error('[Share] Failed to copy:', err);
+                                                        alert('Ссылка скопирована: ' + shareUrl);
+                                                    });
+                                                }}
+                                            >
+                                                <Share2 size={16} /> Поделиться
+                                            </button>
                                         </div>
-                                        <button
-                                            ref={shareBtnRef}
-                                            className="share-collection-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                const shareUrl = `${window.location.origin}/profile?collection=${collection.id}`;
-                                                navigator.clipboard.writeText(shareUrl).then(() => {
-                                                    if (!shareBtnRef.current) return;
-                                                    const originalContent = shareBtnRef.current.innerHTML;
-                                                    shareBtnRef.current.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Скопировано!';
-                                                    shareBtnRef.current.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                                                    setTimeout(() => {
-                                                        if (shareBtnRef.current) {
-                                                            shareBtnRef.current.innerHTML = originalContent;
-                                                            shareBtnRef.current.style.background = '';
-                                                        }
-                                                    }, 2000);
-                                                }).catch((err) => {
-                                                    console.error('[Share] Failed to copy:', err);
-                                                    alert('Ссылка скопирована: ' + shareUrl);
-                                                });
-                                            }}
-                                        >
-                                            <Share2 size={16} /> Поделиться
-                                        </button>
                                     </>
                                 )}
                             </div>
@@ -153,6 +158,7 @@ export default function SingleCollectionModal({
                                                 key={movieId}
                                                 movieId={movieId}
                                                 isEditing={isEditing}
+                                                isReadOnly={isReadOnly}
                                                 onRemove={removeFilm}
                                                 onClick={onMovieClick}
                                             />
@@ -175,7 +181,7 @@ export default function SingleCollectionModal({
 }
 
 // Компонент карточки фильма
-function FilmCard({ movieId, isEditing, onRemove, onClick }) {
+function FilmCard({ movieId, isEditing, isReadOnly, onRemove, onClick }) {
     const { data: film, loading, error } = useFilm(movieId)
 
     if (loading) {
@@ -250,7 +256,7 @@ function FilmCard({ movieId, isEditing, onRemove, onClick }) {
                     </span>
                 </div>
             </div>
-            {isEditing && (
+            {!isReadOnly && isEditing && (
                 <button
                     className="remove-film-btn"
                     onClick={(e) => {
