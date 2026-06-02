@@ -2,7 +2,7 @@
  * API service для работы с Go-бэкендом (Kinopoisk API proxy)
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 async function fetchApi(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;

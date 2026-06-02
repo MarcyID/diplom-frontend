@@ -1,11 +1,10 @@
 /**
  * Profile upload API service
- * Backend: http://localhost:5454
  */
 
 import { fetchApi } from './api-core.js'
 
-const API_BASE_URL = 'http://localhost:5454'
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 /**
  * Загрузить аватар пользователя

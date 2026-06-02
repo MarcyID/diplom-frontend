@@ -1,6 +1,5 @@
 /**
  * Auth API service для работы с Go-бэкендом
- * Backend: http://localhost:5454
  */
 
 import { fetchApi, getAccessToken, getRefreshToken } from './api-core.js'

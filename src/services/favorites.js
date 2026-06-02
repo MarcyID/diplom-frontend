@@ -1,6 +1,5 @@
 /**
  * Favorites API service
- * Backend: http://localhost:5454
  */
 
 import { fetchApi } from './api-core.js'
