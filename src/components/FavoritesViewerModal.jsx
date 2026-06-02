@@ -34,7 +34,7 @@ export default function FavoritesViewerModal({
             setAuthError(true)
             return
         }
-        
+
         setAuthError(false)
         setLoading(true)
         try {
@@ -54,14 +54,14 @@ export default function FavoritesViewerModal({
         try {
             const isFilm = item.object_type === 'film'
             const id = isFilm ? (item.film_data?.kinopoiskId || item.object_id) : (item.person_data?.kinopoiskId || item.object_id)
-            
+
             await (isFilm ? toggleFilm(id) : togglePerson(id))
-            
+
             // Обновляем локальный список
             setFavoritesData(prev => prev.filter(i => 
                 i.object_id !== item.object_id || i.object_type !== item.object_type
             ))
-            
+
             // Уведомляем родительский компонент
             if (onUpdateFavorites) {
                 onUpdateFavorites()

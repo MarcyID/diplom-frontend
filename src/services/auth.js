@@ -50,8 +50,6 @@ export function clearAuthData() {
     localStorage.removeItem(USER_KEY);
 }
 
-// ==================== AUTH ENDPOINTS ====================
-
 /**
  * Регистрация нового пользователя
  * @param {Object} credentials - Данные регистрации
@@ -67,8 +65,6 @@ export async function register(credentials) {
         body: JSON.stringify(credentials),
     });
 
-    // Register endpoint возвращает { message, user: {...} } без токенов
-    // После регистрации нужно автоматически выполнить вход
     if (response?.user) {
         // Автоматический вход после успешной регистрации
         const loginResponse = await login({

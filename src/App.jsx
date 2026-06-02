@@ -24,7 +24,6 @@ import { getFavorites, toggleFilm, togglePerson } from './services/favorites'
 // Ключ для localStorage избранного
 const FAVORITES_KEY = 'favorites_cache'
 
-// === ПРОСТОЙ КОМПОНЕНТ ГЛАВНОЙ ===
 function Home({ onMovieClick, onOpenFeatureModal, onOpenCollection }) {
     const location = useLocation()
 
@@ -50,22 +49,21 @@ function Home({ onMovieClick, onOpenFeatureModal, onOpenCollection }) {
     )
 }
 
-// === ГЛАВНОЕ ПРИЛОЖЕНИЕ ===
 function App() {
-    // 🔐 Состояние авторизации
+    // Состояние авторизации
     const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-    // 🎬 Состояние модалки фильма
+    // Состояние модалки фильма
     const [selectedFilmId, setSelectedFilmId] = useState(null)
     const [isMovieModalOpen, setIsMovieModalOpen] = useState(false)
 
-    // 🎭 Состояние карточек актёров/режиссёров
+    // Состояние карточек актёров/режиссёров
     const [selectedActorId, setSelectedActorId] = useState(null)
     const [isActorCardOpen, setIsActorCardOpen] = useState(false)
     const [selectedDirectorId, setSelectedDirectorId] = useState(null)
     const [isDirectorCardOpen, setIsDirectorCardOpen] = useState(false)
 
-    // 👤 Профиль пользователя
+    // Профиль пользователя
     const [user, setUser] = useState({
         name: '',
         avatar: null,
@@ -79,7 +77,7 @@ function App() {
     })
     const [collectionsLoading, setCollectionsLoading] = useState(isAuthenticated() !== null)
 
-    // 🔐 Проверка авторизации при загрузке
+    // Проверка авторизации при загрузке
     useEffect(() => {
         const checkAuth = async () => {
             const token = isAuthenticated()
@@ -393,10 +391,10 @@ function App() {
         }
     }
 
-    // ❤️ Переключатель избранного для актёров
+    // Переключатель избранного для актёров
     const toggleFavoriteActor = async (actorId) => {
         const numericId = Number(actorId)
-        
+
         if (!isLoggedIn) {
             setUser(prev => {
                 const list = prev.favoriteActors || []
@@ -447,10 +445,10 @@ function App() {
         }
     }
 
-    // ❤️ Переключатель избранного для режиссёров
+    // Переключатель избранного для режиссёров
     const toggleFavoriteDirector = async (directorId) => {
         const numericId = Number(directorId)
-        
+
         if (!isLoggedIn) {
             setUser(prev => {
                 const list = prev.favoriteDirectors || []
@@ -461,26 +459,6 @@ function App() {
             })
             return
         }
-
-        // Оптимистичное обновление UI
-        let previousState
-        setUser(prev => {
-            const list = prev.favoriteDirectors || []
-            previousState = list
-            const updated = list.includes(numericId)
-                ? list.filter(id => id !== numericId)
-                : [...list, numericId]
-
-            // Сохраняем в localStorage сразу
-            const newFavorites = {
-                ...JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}'),
-                favoriteDirectors: updated
-            }
-            localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites))
-
-            return { ...prev, favoriteDirectors: updated }
-        })
-
         try {
             const result = await togglePerson(numericId)
             if (result.added !== !previousState.includes(numericId)) {
@@ -501,7 +479,7 @@ function App() {
         }
     }
 
-    // ✏️ Обновление подборки
+    // Обновление подборки
     const updateCollection = async (collectionId, updates) => {
         try {
             const updated = await apiUpdateCollection(collectionId, updates)
@@ -527,7 +505,7 @@ function App() {
         }
     }
 
-    // 🗑️ Удаление подборки
+    // Удаление подборки
     const deleteCollection = async (collectionId) => {
         try {
             await apiDeleteCollection(collectionId)
@@ -588,7 +566,7 @@ function App() {
         }
     }
 
-    // ✨ Создать новую подборку
+    // Создать новую подборку
     const createNewCollection = async (newColData) => {
         try {
             const newCollection = await createCollection({
@@ -758,7 +736,7 @@ function AppContent({
         setAuthExpiredCallback(() => setIsAuthModalOpen(true))
     }, [])
 
-    // 🎪 Открыть фич-модалку по типу
+    // Открыть FeatureModal по типу
     const handleOpenFeatureModal = (type) => {
         if (type === 'selection') setIsSelectionOpen(true)
         else if (type === 'random') setIsRandomOpen(true)
@@ -771,11 +749,11 @@ function AppContent({
         }
     }
 
-    // 👤 Клик по профилю
+    // Клик по профилю
     const handleProfileClick = () => {
         if (!isLoggedIn) {
             // Запоминаем, что после логина нужно перейти в профиль
-            setPendingCollectionCreate(false) // Сбрасываем флаг подборки если был
+            setPendingCollectionCreate(false)
             setAuthNavigateTo('/profile')
             setIsAuthModalOpen(true)
         } else {

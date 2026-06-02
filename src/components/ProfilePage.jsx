@@ -85,7 +85,6 @@ export default function ProfilePage({
     }
 
     const handleToggleGenrePreference = async (genreId) => {
-        // Оптимистичное обновление UI
         const newPreferences = genrePreferences.includes(genreId)
             ? genrePreferences.filter(id => id !== genreId)
             : [...genrePreferences, genreId]
@@ -95,7 +94,7 @@ export default function ProfilePage({
         try {
             await updateGenrePreferences(newPreferences)
 
-            // Обновляем состояние пользователя в App.jsx
+            // Обновляем состояние пользователя
             setUser(prev => ({
                 ...prev,
                 genre_preferences: newPreferences
@@ -107,7 +106,7 @@ export default function ProfilePage({
         }
     }
 
-    // 📸 Загрузка аватара
+    // Загрузка аватара
     const handleAvatarChange = async (e) => {
         const file = e.target.files[0]
         if (!file) return
@@ -139,11 +138,11 @@ export default function ProfilePage({
             setUploadError(error.message)
         } finally {
             setIsUploadingAvatar(false)
-            e.target.value = '' // Сбросить input
+            e.target.value = ''
         }
     }
 
-    // 📸 Загрузка фона
+    // Загрузка фона
     const handleBannerChange = async (e) => {
         const file = e.target.files[0]
         if (!file) return
@@ -179,7 +178,7 @@ export default function ProfilePage({
         }
     }
 
-    // 📸 Удаление аватара
+    // Удаление аватара
     const handleDeleteAvatar = async () => {
         setIsUploadingAvatar(true)
         setUploadError(null)
@@ -198,7 +197,7 @@ export default function ProfilePage({
         }
     }
 
-    // 📸 Удаление фона
+    // Удаление фона
     const handleDeleteBanner = async () => {
         setIsUploadingBanner(true)
         setUploadError(null)
@@ -217,11 +216,11 @@ export default function ProfilePage({
         }
     }
 
-    // ❤️ Загрузка избранного при монтировании
+    // Загрузка избранного при монтировании
     useEffect(() => {
         loadFavorites()
     }, [isLoggedIn])
-    
+
     const loadFavorites = async () => {
         if (!isAuthenticated()) {
             setFavoritesAuthError(true)
@@ -242,8 +241,8 @@ export default function ProfilePage({
             setFavoritesLoading(false)
         }
     }
-    
-    // ❤️ Удаление из избранного
+
+    // Удаление из избранного
     const handleRemoveFromFavorites = async (item) => {
         try {
             const isFilm = item.object_type === 'film'
@@ -318,11 +317,11 @@ export default function ProfilePage({
     const saveName = async () => {
         if (tempName.trim()) {
             const newName = tempName.trim()
-            
+
             // Оптимистичное обновление UI
             const previousName = user.name
             setUser(prev => ({ ...prev, name: newName }))
-            
+
             try {
                 await updateProfile({ full_name: newName })
             } catch (error) {
@@ -334,17 +333,6 @@ export default function ProfilePage({
         setIsEditingName(false)
     }
 
-    // Переключение жанра
-    const toggleGenre = (genre) => {
-        setUser(prev => {
-            const current = prev.genres || []
-            const updated = current.includes(genre)
-                ? current.filter(g => g !== genre)
-                : [...current, genre]
-            return { ...prev, genres: updated }
-        })
-    }
-
     const addCollection = async (newCol) => {
         try {
             await onCreateCollection(newCol)
@@ -352,7 +340,6 @@ export default function ProfilePage({
         } catch (error) {
             console.error('[ProfilePage] Failed to create collection:', error)
             alert('Не удалось создать подборку: ' + (error.message || 'Ошибка API'))
-            // Модалка остаётся открытой, пользователь может попробовать снова
         }
     }
 
@@ -418,18 +405,17 @@ export default function ProfilePage({
         setStartInEditMode(false)
     }
 
-    // 🔥 Обновление подборки
+    // Обновление подборки
     const updateCollection = async (collectionId, updates) => {
         try {
             await onUpdateCollection(collectionId, updates)
-            // Состояние обновится в App.jsx
         } catch (error) {
             console.error('[ProfilePage] Failed to update collection:', error)
             throw error
         }
     }
 
-    // 🔥 Удаление из избранного
+    // Удаление из избранного
     const removeFromFavorites = (type, id) => {
         if (type === 'movie') {
             setUser(prev => ({
