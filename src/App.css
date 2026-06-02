@@ -3157,68 +3157,6 @@ img, svg, video { max-width: 100%; display: block; }
   box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
 }
 
-/* Divider */
-.auth-divider {
-  display: flex;
-  align-items: center;
-  margin: 1.5rem 0;
-  color: var(--text-gray);
-  font-size: 0.85rem;
-}
-
-.auth-divider::before, .auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.auth-divider span { padding: 0 1rem; }
-
-/* Socials */
-.social-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-/* === SOCIAL BUTTONS (БЕЗ ПОДЛОЖКИ) === */
-.social-btn {
-  width: 100%;
-  aspect-ratio: 1;
-  border: none;
-  background: transparent; /* Полностью прозрачный фон */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0.5rem; /* Невидимая область клика, чтобы было удобно нажимать */
-  transition: transform 0.2s ease;
-}
-
-.social-btn img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  opacity: 0.5; /* Иконки слегка приглушены в спокойном состоянии */
-  transition: opacity 0.2s ease, transform 0.2s ease, filter 0.2s ease;
-}
-
-.social-btn:hover {
-  transform: translateY(-2px); /* Лёгкий "подъём" при наведении */
-}
-
-.social-btn:hover img {
-  opacity: 1;
-  transform: scale(1.15); /* Иконка становится ярче и чуть крупнее */
-}
-
-/* Брендовые подсветки (действуют только на картинку) */
-.social-btn.google:hover img { filter: drop-shadow(0 0 8px rgba(219, 68, 55, 0.6)); }
-.social-btn.vk:hover img { filter: drop-shadow(0 0 8px rgba(0, 119, 255, 0.6)); }
-.social-btn.yandex:hover img { filter: drop-shadow(0 0 8px rgba(252, 63, 29, 0.6)); }
-.social-btn.telegram:hover img { filter: drop-shadow(0 0 8px rgba(0, 136, 204, 0.6)); }
-
 /* === VALIDATION STYLES (БЕЗ СДВИГОВ) === */
 .input-group {
   position: relative;

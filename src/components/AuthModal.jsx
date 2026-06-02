@@ -5,11 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { login, register } from '../services/auth'
 import { getMyCollections, getCollection } from '../services/collections'
 
-// Импорты иконок
-import googleIcon from '../assets/icons/google.svg'
-import vkIcon from '../assets/icons/vk.svg'
-import yandexIcon from '../assets/icons/yandex.svg'
-
 // Принимаем setUser, чтобы сохранять имя
 function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navigateTo, setCollectionsLoading }) {
     const [isLogin, setIsLogin] = useState(true)
@@ -238,14 +233,6 @@ function AuthModal({ isOpen, onClose, setIsLoggedIn, setUser, onAfterLogin, navi
                         {!isLoading && <ChevronRight size={18} />}
                     </button>
                 </form>
-
-                <div className="auth-divider"><span>или войти через</span></div>
-
-                <div className="social-grid">
-                    <button className="social-btn google"><img src={googleIcon} alt="Google" /></button>
-                    <button className="social-btn vk"><img src={vkIcon} alt="VK" /></button>
-                    <button className="social-btn yandex"><img src={yandexIcon} alt="Yandex" /></button>
-                </div>
                             </div>
                         </motion.div>
                     </div>
