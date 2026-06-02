@@ -1,46 +1,26 @@
 /**
  * API Core - базовая функция для API запросов
- * Backend: http://localhost:5454
  */
 
-const API_BASE_URL = 'http://localhost:5454'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
-// Ключи для localStorage
 const ACCESS_TOKEN_KEY = 'access_token'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 
-// Callback для обработки истечения авторизации
 let onAuthExpiredCallback = null
 
-/**
- * Установить callback для обработки истечения авторизации
- * @param {Function} callback - Функция, вызываемая при 401 ошибке
- */
 export function setAuthExpiredCallback(callback) {
     onAuthExpiredCallback = callback
 }
 
-/**
- * Получить access token
- */
 export function getAccessToken() {
     return localStorage.getItem(ACCESS_TOKEN_KEY)
 }
 
-/**
- * Получить refresh token
- */
 export function getRefreshToken() {
     return localStorage.getItem(REFRESH_TOKEN_KEY)
 }
 
-/**
- * Base fetch wrapper с обработкой ошибок и авторизацией
- * @param {string} endpoint - API endpoint path
- * @param {Object} options - Fetch options
- * @param {boolean} requiresAuth - Требуется ли авторизация
- * @returns {Promise<any>} Response data
- */
 export async function fetchApi(endpoint, options = {}, requiresAuth = false) {
     const url = `${API_BASE_URL}${endpoint}`
 
@@ -49,7 +29,6 @@ export async function fetchApi(endpoint, options = {}, requiresAuth = false) {
         ...options.headers,
     }
 
-    // Добавляем токен авторизации если требуется
     if (requiresAuth) {
         const token = getAccessToken()
         if (token) {
@@ -66,7 +45,6 @@ export async function fetchApi(endpoint, options = {}, requiresAuth = false) {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
 
-            // Формируем понятные сообщения об ошибках
             let errorMessage = errorData.message || errorData.error || `API Error: ${response.status}`
 
             if (response.status === 401) {
@@ -75,7 +53,6 @@ export async function fetchApi(endpoint, options = {}, requiresAuth = false) {
                 } else if (endpoint.includes('/register')) {
                     errorMessage = 'Пользователь с таким email уже существует'
                 } else if (endpoint.includes('/refresh')) {
-                    // Refresh token истёк или невалиден - очищаем и открываем логин
                     errorMessage = 'Сессия истекла, выполните вход заново'
                     localStorage.removeItem(ACCESS_TOKEN_KEY)
                     localStorage.removeItem(REFRESH_TOKEN_KEY)
@@ -104,13 +81,11 @@ export async function fetchApi(endpoint, options = {}, requiresAuth = false) {
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
             const jsonData = await response.json()
-            // Backend возвращает { data: {...}, message: "..." } - разворачиваем data
             return jsonData.data || jsonData
         }
 
         return null
     } catch (error) {
-        console.error(`API request failed [${endpoint}]:`, error)
         throw error
     }
 }
